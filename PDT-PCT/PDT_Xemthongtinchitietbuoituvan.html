@@ -322,7 +322,48 @@
 </head>
 <body>
   <iframe src="../header.html" style="width: 100%; border: none; overflow: hidden; display: block;"></iframe>
+  <script>
+      let thongtin = null;
+      const urlParams2 = new URLSearchParams(window.location.search);
+      const ticket = urlParams2.get('ticket');
+      const serviceUrl = window.location.href.split('?')[0];
 
+      function removeTicketFromUrl() {
+          window.history.replaceState({}, document.title, serviceUrl);
+      }
+
+      async function run() {
+
+          if (!ticket) {
+              window.location.href =
+                  `https://casserver-production.up.railway.app/cas/login?service=${encodeURIComponent(serviceUrl)}`;
+              return; // dừng luôn không chạy tiếp
+          }
+
+          // ⏳ CHỜ fetch xử lý xong
+          const response = await fetch('http://localhost:8087/userinfo', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ticket, service: serviceUrl })
+          });
+
+          const data = await response.json();
+
+          if (!data.success) {
+              removeTicketFromUrl();
+              return;
+          }
+
+          thongtin = data.attributes;
+
+          removeTicketFromUrl();
+          
+      }
+
+      // BẮT ĐẦU CHƯƠNG TRÌNH
+      run();
+
+  </script>
   <div class="main-container">
     <div class="content-wrapper">
       <!-- Event information card -->
@@ -361,7 +402,7 @@
   </div>
 
   <!-- Import data -->
-  <script src="data2.js"></script>
+  <script src="/pdt/data2"></script>
   <script>
     // Lấy ID từ URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -389,7 +430,7 @@
           <i class="fas fa-exclamation-triangle fa-4x" style="margin-bottom:20px; opacity:0.7;"></i>
           <h2>${message}</h2>
           <p style="margin-top:16px;">
-            <a href="PDT_Xemdstuvan.html" style="color:#0388B4; text-decoration:underline;">← Quay lại danh sách</a>
+            <a href="/pdt/chitietbuoituvan" style="color:#0388B4; text-decoration:underline;">← Quay lại danh sách</a>
           </p>
         </div>`;
     }

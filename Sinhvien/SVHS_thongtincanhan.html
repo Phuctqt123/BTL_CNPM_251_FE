@@ -35,7 +35,48 @@
 <body>
   <!-- Header -->
   <iframe src="../header.html" style="width:100%;border:none;overflow:hidden;display:block;"></iframe>
+  <script>
+      let thongtin = null;
+      const urlParams = new URLSearchParams(window.location.search);
+      const ticket = urlParams.get('ticket');
+      const serviceUrl = window.location.href.split('?')[0];
 
+      function removeTicketFromUrl() {
+          window.history.replaceState({}, document.title, serviceUrl);
+      }
+
+      async function run() {
+
+          if (!ticket) {
+              window.location.href =
+                  `https://casserver-production.up.railway.app/cas/login?service=${encodeURIComponent(serviceUrl)}`;
+              return; // dừng luôn không chạy tiếp
+          }
+
+          // ⏳ CHỜ fetch xử lý xong
+          const response = await fetch('http://localhost:8087/userinfo', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ticket, service: serviceUrl })
+          });
+
+          const data = await response.json();
+
+          if (!data.success) {
+              removeTicketFromUrl();
+              return;
+          }
+
+          thongtin = data.attributes;
+
+          removeTicketFromUrl();
+          
+      }
+
+      // BẮT ĐẦU CHƯƠNG TRÌNH
+      run();
+
+  </script>
   <!-- Main Content -->
   <div class="main-container" id="mainContent">
     <!-- Nội dung sẽ được render bằng JavaScript từ data2.js -->
@@ -47,7 +88,7 @@
   </div>
 
   <!-- Load dữ liệu -->
-  <script src="data2.js"></script>
+  <script src="/sv/data2"></script>
   <script>
     // === CHỈ SỬA PHẦN NÀY – GIỮ NGUYÊN GIAO DIỆN ===
     async function renderProfile() {

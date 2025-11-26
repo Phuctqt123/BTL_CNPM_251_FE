@@ -12,3 +12,26 @@ git push origin main
 
 # 5. Lấy lại các file đã stash (nếu cần)
 git stash pop
+
+
+Khởi tạo repo Git (nếu chưa có)
+git init
+
+
+git remote add origin https://github.com/Phuctqt123/BTL_CNPM_251_FE
+Nếu repo đã có từ trước nhưng muốn đổi remote:
+git remote set-url origin https://github.com/Phuctqt123/BTL_CNPM_251_FE
+
+git add .
+git commit -m "Initial commit"
+
+
+
+
+
+
+
+
+git remote add origin https://github.com/Phuctqt123/BTL_CNPM_251_FE
+git fetch origin
+git reset --hard origin/main

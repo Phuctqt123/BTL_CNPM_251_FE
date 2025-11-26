@@ -14,7 +14,7 @@ const navCards = [
         description: "Xem và cập nhật thông tin cá nhân, hồ sơ sinh viên của bạn"
     },
     {
-        href: "/sv/dangkybuoituan",
+        href: "/sv/dangkybuoituvan",
         icon: "fas fa-calendar-check",
         title: "Đăng Ký Buổi Tư Vấn",
         description: "Tìm và đăng ký các buổi tư vấn, hỗ trợ học tập phù hợp với bạn"

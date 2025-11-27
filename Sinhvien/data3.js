@@ -46,3 +46,4 @@ function getEvents() {
     }, 300); // delay 300ms giống gọi API thật
   });
 }
+window.getEvents = getEvents;

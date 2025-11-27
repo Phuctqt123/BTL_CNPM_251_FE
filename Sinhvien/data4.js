@@ -55,3 +55,4 @@ function getHistoryData() {
     }, 400); // delay nhẹ để thấy loading
   });
 }
+window.getHistoryData=getHistoryData;

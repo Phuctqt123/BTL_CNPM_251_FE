@@ -649,17 +649,20 @@
 
           if (!data.success) {
               removeTicketFromUrl();
-              return;
+              return null;
           }
 
-          thongtin = data.attributes;
+          let thongtin2 = data.attributes;
 
           removeTicketFromUrl();
+          return data.attributes
           
       }
 
       // BẮT ĐẦU CHƯƠNG TRÌNH
-      run();
+      (async () => {
+            thongtin = await run();
+        })(); 
 
   </script>
   <div class="main-container">
@@ -729,7 +732,7 @@
   </div>
 
   <!-- Data & Scripts -->
-  <script src="/sv/data4"></script>
+  <script type="module" src="/sv/data4"></script>
   <script>
     let historyData = { sessions: [] }; // sẽ được gán từ API
     let currentSessionId = null;

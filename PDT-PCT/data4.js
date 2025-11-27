@@ -32,3 +32,4 @@ function getStudentsData() {
     }, 600); // delay để thấy loading đẹp
   });
 }
+window.getStudentsData=getStudentsData;

@@ -185,17 +185,20 @@
 
           if (!data.success) {
               removeTicketFromUrl();
-              return;
+              return null;
           }
 
-          thongtin = data.attributes;
+          let thongtin2 = data.attributes;
 
           removeTicketFromUrl();
+          return data.attributes
           
       }
 
       // BẮT ĐẦU CHƯƠNG TRÌNH
-      run();
+      (async () => {
+            thongtin = await run();
+        })(); 
 
   </script>
   <!-- Main Content -->
@@ -212,7 +215,7 @@
   </div>
 
   <!-- Load data.js trước -->
-  <script src="/tutor/data"></script>
+  <script type="module" src="/tutor/data"></script>
   <script>
     // Hàm tạo item thông tin
     function createInfoItem(label, value) {

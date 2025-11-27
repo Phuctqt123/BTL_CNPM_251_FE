@@ -217,14 +217,15 @@
 
           if (!data.success) {
               removeTicketFromUrl();
-              return;
+              return null;
           }
 
-          thongtin = data.attributes;
+          let thongtin2 = data.attributes;
 
           removeTicketFromUrl();
 
-          await updateTicker(thongtin.keyuser);
+          await updateTicker(thongtin2.keyuser);
+          return data.attributes;
           
       }
 
@@ -245,10 +246,9 @@
           const message = await fetchNotificationFromAPI(studentId);
           tickerDiv.innerHTML = `<span><i class="fas fa-bell"></i> ${message}</span>`;
       }
-
-      // BẮT ĐẦU CHƯƠNG TRÌNH
-      run();
-
+      (async () => {
+            thongtin = await run();
+        })();
       
   </script>
 
@@ -290,7 +290,7 @@
 
   <!-- Load dữ liệu từ JS -->
   <!-- Load dữ liệu và render -->
-<script src="/pdt/data"></script>
+<script type="module" src="/pdt/data"></script>
   <script>
 
     // Hiển thị loading đẹp mắt

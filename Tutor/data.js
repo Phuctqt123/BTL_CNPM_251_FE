@@ -46,3 +46,6 @@ function getProfileDataSync() {
 
 // Export nếu dùng module (ES6)
 // export { fetchProfileData, getProfileDataSync, profileData };
+window.profileData=profileData;
+window.fetchProfileData=fetchProfileData;
+window.getProfileDataSync=getProfileDataSync;

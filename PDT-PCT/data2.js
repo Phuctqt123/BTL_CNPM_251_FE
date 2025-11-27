@@ -71,3 +71,4 @@ function getEventDetailById(eventId) {
     }, 600);
   });
 }
+window.getEventDetailById=getEventDetailById;

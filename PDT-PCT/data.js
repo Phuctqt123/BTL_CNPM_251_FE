@@ -36,3 +36,4 @@ function getDashboardData() {
     }, 500); // delay 500ms để thấy hiệu ứng loading đẹp
   });
 }
+window.getDashboardData=getDashboardData;

@@ -42,3 +42,6 @@ const notifications = [
         text: 'Tài liệu có thể bạn quan tâm "Tài liệu UML" đã đăng tải.'
     }
 ];
+window.videoConfig = videoConfig;
+window.navCards=navCards;
+window.notifications=notifications;

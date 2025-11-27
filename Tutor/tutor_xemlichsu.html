@@ -100,17 +100,20 @@
 
           if (!data.success) {
               removeTicketFromUrl();
-              return;
+              return null;
           }
 
-          thongtin = data.attributes;
+          let thongtin2 = data.attributes;
 
           removeTicketFromUrl();
+          return data.attributes
           
       }
 
       // BẮT ĐẦU CHƯƠNG TRÌNH
-      run();
+      (async () => {
+            thongtin = await run();
+        })(); 
 
   </script>
     <main>
@@ -193,7 +196,7 @@
         <iframe src="../footer.html" style="width:100%;height:100%;border:none"></iframe>
     </div>
 
-    <script src="/tutor/data2"></script>
+    <script type="module" src="/tutor/data2"></script>
     <script>
         let currentSessionId = null;
         let currentStudentId = null;

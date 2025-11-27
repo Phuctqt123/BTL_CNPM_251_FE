@@ -63,3 +63,4 @@ function getConsultingEvents() {
     }, 500); // delay nhẹ để thấy loading đẹp
   });
 }
+window.getConsultingEvents=getConsultingEvents;

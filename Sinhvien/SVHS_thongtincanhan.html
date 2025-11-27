@@ -64,17 +64,25 @@
 
           if (!data.success) {
               removeTicketFromUrl();
-              return;
+              return null;
           }
 
-          thongtin = data.attributes;
+          let thongtin2 = data.attributes;
 
           removeTicketFromUrl();
+          return data.attributes
           
       }
 
       // BẮT ĐẦU CHƯƠNG TRÌNH
-      run();
+      (async () => {
+            thongtin = await run();
+            console.log("Thongtin CAS:", thongtin);
+
+            if (thongtin) {
+                document.dispatchEvent(new Event("CAS_READY"));
+            }
+        })(); 
 
   </script>
   <!-- Main Content -->
@@ -88,7 +96,7 @@
   </div>
 
   <!-- Load dữ liệu -->
-  <script src="/sv/data2"></script>
+  <script type="module" src="/sv/data2"></script>
   <script>
     // === CHỈ SỬA PHẦN NÀY – GIỮ NGUYÊN GIAO DIỆN ===
     async function renderProfile() {
@@ -96,7 +104,7 @@
       
       try {
         // Lấy dữ liệu từ data2.js (có hàm getStudentProfile)
-        const profile = await getStudentProfile();
+        const profile = await getStudentProfile(thongtin.keyuser);
 
         container.innerHTML = '';
 
@@ -153,7 +161,9 @@
     }
 
     // Chạy khi trang load xong
-    document.addEventListener('DOMContentLoaded', renderProfile);
+    document.addEventListener("CAS_READY", () => {
+      renderProfile();  
+    });
   </script>
 </body>
 </html>

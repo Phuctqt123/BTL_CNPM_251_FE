@@ -162,17 +162,20 @@
 
           if (!data.success) {
               removeTicketFromUrl();
-              return;
+              return null;
           }
 
-          thongtin = data.attributes;
+          let thongtin2 = data.attributes;
 
           removeTicketFromUrl();
+          return data.attributes
           
       }
 
       // BẮT ĐẦU CHƯƠNG TRÌNH
-      run();
+      (async () => {
+            thongtin = await run();
+        })(); 
 
   </script>
   <div class="container">
@@ -229,7 +232,7 @@
   </div>
 
   <!-- Load dữ liệu -->
-  <script src="/sv/data3"></script>
+  <script type="module" src="/sv/data3"></script>
   <script>
     const eventsGrid = document.getElementById('eventsGrid');
     const filterButtons = document.querySelectorAll('.filter-btn');

@@ -131,7 +131,9 @@
       const serviceUrl = window.location.href.split('?')[0];
 
       function removeTicketFromUrl() {
-          window.history.replaceState({}, document.title, serviceUrl);
+          const url = new URL(window.location.href);
+          url.searchParams.delete('ticket');  // chỉ xóa ticket
+          window.history.replaceState({}, document.title, url.toString());
       }
 
       async function run() {

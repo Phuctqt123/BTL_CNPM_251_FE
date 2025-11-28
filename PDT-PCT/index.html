@@ -195,7 +195,9 @@
       const serviceUrl = window.location.href.split('?')[0];
 
       function removeTicketFromUrl() {
-          window.history.replaceState({}, document.title, serviceUrl);
+          const url = new URL(window.location.href);
+          url.searchParams.delete('ticket');  // chỉ xóa ticket
+          window.history.replaceState({}, document.title, url.toString());
       }
 
       async function run() {
@@ -292,6 +294,8 @@
   <!-- Load dữ liệu và render -->
 <script type="module" src="/pdt/data"></script>
   <script>
+    const statsContainer = document.getElementById("stats-container");
+    const updatesContainer = document.getElementById("updates-container");
 
     // Hiển thị loading đẹp mắt
     function showLoading() {
@@ -357,7 +361,7 @@
       showLoading();
 
       try {
-        const data = await getDashboardData(); // Gọi API từ data.js
+        const data = await getDashboardData(); 
         
         // Render khi có dữ liệu
         renderStats(data.stats);

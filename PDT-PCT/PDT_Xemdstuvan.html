@@ -88,7 +88,9 @@
       const serviceUrl = window.location.href.split('?')[0];
 
       function removeTicketFromUrl() {
-          window.history.replaceState({}, document.title, serviceUrl);
+          const url = new URL(window.location.href);
+          url.searchParams.delete('ticket');  // chỉ xóa ticket
+          window.history.replaceState({}, document.title, url.toString());
       }
 
       async function run() {
@@ -270,7 +272,7 @@
 
     // === XEM CHI TIẾT ===
     function viewDetails(id) {
-      window.location.href = `/pdt/chitietbuoituvan`;
+      window.location.href = `/pdt/chitietbuoituvan?id=${id}`;
     }
 
     // === GỌI API KHI LOAD TRANG ===

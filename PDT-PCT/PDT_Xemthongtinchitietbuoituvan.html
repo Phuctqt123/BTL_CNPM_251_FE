@@ -326,11 +326,14 @@
       let thongtin = null;
       const urlParams2 = new URLSearchParams(window.location.search);
       const ticket = urlParams2.get('ticket');
-      const serviceUrl = window.location.href.split('?')[0];
+      const serviceUrl = window.location.href;
 
       function removeTicketFromUrl() {
-          window.history.replaceState({}, document.title, serviceUrl);
+          const url = new URL(window.location.href);
+          url.searchParams.delete('ticket');  // chỉ xóa ticket
+          window.history.replaceState({}, document.title, url.toString());
       }
+
 
       async function run() {
 
@@ -409,7 +412,7 @@
   <script>
     // Lấy ID từ URL
     const urlParams = new URLSearchParams(window.location.search);
-    const eventId = urlParams.get('id') || 'e1'; // mặc định e1 nếu không có
+    const eventId = urlParams.get('id') ; 
 
     // === HIỂN THỊ LOADING ===
     function showLoading() {

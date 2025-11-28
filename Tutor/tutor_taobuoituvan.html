@@ -301,10 +301,12 @@
       let thongtin = null;
       const urlParams = new URLSearchParams(window.location.search);
       const ticket = urlParams.get('ticket');
-      const serviceUrl = window.location.href.split('?')[0];
+      const serviceUrl = window.location.href;
 
       function removeTicketFromUrl() {
-          window.history.replaceState({}, document.title, serviceUrl);
+          const url = new URL(window.location.href);
+          url.searchParams.delete('ticket');  // chỉ xóa ticket
+          window.history.replaceState({}, document.title, url.toString());
       }
 
       async function run() {

@@ -1,30 +1,45 @@
 import axiosClient from "./axiosClient.js";
 
-const TutorAPI = {
+const TutorApi = {
+    // Lấy thông tin cá nhân giảng viên
     getProfile(id) {
-        return axiosClient.get('/api/tutor/profile/${id}');
+        return axiosClient.get(`/api/tutor/profile/${id}`);
     },
+
+    // Tạo buổi tư vấn
     createSession(data) {
-        return axiosClient.post('/api/tutor/session/register', data);
+        return axiosClient.post(`/api/tutor/session/create`, data);
     },
+
+    // Thêm 1 tài liệu vào buổi tư vấn
     addDocument(data) {
-        return axiosClient.post('/api/tutor/session/add_document', data);
+        return axiosClient.post(`/api/tutor/session/add_document`, data);
     },
+
+    // Xóa 1 tài liệu trong buổi tư vấn
     deleteDocument(data) {
-        return axiosClient.post('/api/tutor/session/delete_document', data);
+        return axiosClient.post(`/api/tutor/session/delete_document`, data);
     },
+
+    // Xem tài liệu của buổi tư vấn
     getDocuments(sessionId) {
-        return axiosClient.get('/api/tutor/session/${sessionId}/documents');
+        return axiosClient.get(`/api/tutor/session/${sessionId}/documents`);
     },
+
+    // Hủy buổi tư vấn
     cancelSession(data) {
-        return axiosClient.post('/api/tutor/session/cancel', data);
+        return axiosClient.post(`/api/tutor/session/cancel`, data);
     },
-    getHistory(id) {
-        return axiosClient.get('/api/tutor/history/${id}');
+
+    // Lấy danh sách buổi tư vấn đã tạo
+    getCreatedSessions(id) {
+        return axiosClient.get(`/api/tutor/history/${id}`);
     },
-    reviews(data) {
-        return axiosClient.post('/api/tutor/reviews', data);
+
+    // Đánh giá sinh viên
+    reviewStudent(data) {
+        return axiosClient.post(`/api/tutor/reviews`, data);
     }
 };
 
-export default TutorAPI;
+export default TutorApi;

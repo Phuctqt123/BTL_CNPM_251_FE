@@ -66,6 +66,60 @@
         .rating-btn.selected{border-color:#27ae60;background:rgba(39,174,96,.1);color:#27ae60}
         .form-actions{display:flex;gap:15px;margin-top:30px}
         .btn-submit{flex:1;padding:12px;background:#27ae60;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer}
+        
+
+        /* TOAST NOTIFICATION - ĐẸP & HIỆN ĐẠI */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .toast {
+        min-width: 320px;
+        padding: 16px 20px;
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideInRight 0.4s ease forwards, fadeOut 0.4s ease 3.6s forwards;
+        opacity: 0;
+        transform: translateX(100%);
+    }
+
+    .toast.success {
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+    }
+
+    .toast.error {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+    }
+
+    .toast i {
+        font-size: 24px;
+    }
+
+    @keyframes slideInRight {
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes fadeOut {
+        to {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+    }
+    
     </style>
 </head>
 <body>
@@ -180,9 +234,11 @@
             <form onsubmit="submitEvaluation(event)">
                 <label style="display:block;margin-bottom:10px;font-weight:600;color:#0388B4">Mức đánh giá</label>
                 <div class="rating-options">
-                    <button type="button" class="rating-btn" onclick="selectRating('Tốt')">Tốt</button>
-                    <button type="button" class="rating-btn" onclick="selectRating('Khá')">Khá</button>
-                    <button type="button" class="rating-btn" onclick="selectRating('Trung bình')">Trung bình</button>
+                    <button type="button" class="rating-btn" data-val="Xuất sắc" onclick="selectRating('Xuất sắc')">Xuất sắc</button>
+                    <button type="button" class="rating-btn" data-val="Tốt" onclick="selectRating('Tốt')">Tốt</button>
+                    <button type="button" class="rating-btn" data-val="Khá" onclick="selectRating('Khá')">Khá</button>
+                    <button type="button" class="rating-btn" data-val="Trung bình" onclick="selectRating('Trung bình')">Trung bình</button>
+                    <button type="button" class="rating-btn" data-val="Kém" onclick="selectRating('Kém')">Kém</button>
                 </div>
                 <label style="display:block;margin:20px 0 10px;font-weight:600;color:#0388B4">Nhận xét chi tiết</label>
                 <textarea id="evaluationDetail" style="width:100%;min-height:100px;padding:12px;border:2px solid #ddd;border-radius:8px" required></textarea>
@@ -207,7 +263,7 @@
         async function renderSessions() {
             const grid = document.getElementById('sessionsGrid');
             try {
-                const sessions = await getSessionsData();
+                const sessions = await getSessionsData(thongtin.keyuser);
                 grid.innerHTML = '';
 
                 sessions.forEach(s => {
@@ -256,21 +312,51 @@
                 div.className = 'document-item-tag';
                 div.innerHTML = `<i class="fas ${icon}" style="color:#e74c3c"></i> 
                                  <span onclick="alert('Tải xuống: ${doc.name}')">${doc.name}</span>
-                                 <button class="delete-doc" onclick="if(confirm('Xóa?')){deleteDocument(${id},${i})}">×</button>`;
+                                 <button class="delete-doc" onclick="{deleteDocument(${id},${doc.id})}">×</button>`;
                 container.appendChild(div);
             });
         }
         function closeDocumentsManagement() { document.getElementById('documentsManagement').classList.remove('open'); }
-        function addNewDocument() {
-            const name = prompt('Tên file (có đuôi .pdf, .docx, ...):');
-            if (name) {
-                documents[currentSessionId].push({name});
-                openDocumentsManagement(currentSessionId);
+        async function addNewDocument() {
+            const name = prompt('Nhập tên tài liệu (có đuôi .pdf, .docx, .pptx, ...):');
+            if (!name || name.trim() === '') {
+                showToast('Tên tài liệu không được để trống!', 'error');
+                return;
+            }
+
+            try {
+                const success = await add_document(thongtin.keyuser, currentSessionId, name.trim());
+
+                if (success) {
+                    showToast('Thêm tài liệu thành công!', 'success');
+                    openDocumentsManagement(currentSessionId); // làm mới danh sách
+                } else {
+                    showToast('Thêm tài liệu thất bại. Vui lòng thử lại!', 'error');
+                }
+            } catch (error) {
+                console.error('Lỗi khi thêm tài liệu:', error);
+                showToast('Có lỗi xảy ra khi thêm tài liệu!', 'error');
             }
         }
-        function deleteDocument(sid, idx) {
-            documents[sid].splice(idx, 1);
-            openDocumentsManagement(sid);
+
+        async function deleteDocument(sid, docId) {
+            if (!confirm('Bạn có chắc chắn muốn xóa tài liệu này không?')) {
+                return;
+            }
+
+            try {
+                const success = await delete_document(thongtin.keyuser, sid, docId);
+
+                if (success) {
+                    showToast('Xóa tài liệu thành công!', 'success');
+                    openDocumentsManagement(sid); // làm mới panel tài liệu
+                } else {
+                    showToast('Xóa tài liệu thất bại. Vui lòng thử lại!', 'error');
+                }
+            } catch (error) {
+                console.error('Lỗi khi xóa tài liệu:', error);
+                showToast('Có lỗi xảy ra khi xóa tài liệu!', 'error');
+            }
         }
 
         // Danh sách sinh viên + đánh giá
@@ -278,19 +364,29 @@
             currentSessionId = id;
             const panel = document.getElementById('studentListPanel');
             const tbody = document.getElementById('studentTableBody');
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Đang tải...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px">Đang tải...</td></tr>';
             panel.classList.add('open');
 
             const students = await getStudentsBySessionId(id);
             tbody.innerHTML = '';
+
             students.forEach((s, i) => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${i+1}</td>
+                    <td>${i + 1}</td>
                     <td>${s.mssv}</td>
                     <td>${s.name}</td>
-                    <td><span class="student-status ${s.participated==='Có'?'participated':'not-participated'}">${s.participated==='Có'?'Tham gia':'Vắng'}</span></td>
-                    <td>${s.rating ? '<span style="color:green;font-weight:600">'+s.rating+'</span>' : '<button class="btn-evaluate-student" onclick="openEvaluationForm('+id+','+s.id+')">Đánh giá</button>'}</td>
+                    <td>
+                        <span class="student-status ${s.participated === 'Có' ? 'participated' : 'not-participated'}">
+                            ${s.participated === 'Có' ? 'Tham gia' : 'Vắng'}
+                        </span>
+                    </td>
+                    <td>
+                        ${s.rating 
+                            ? `<span style="color:green;font-weight:600">${s.rating}</span>`
+                            : `<button class="btn-evaluate-student" onclick="openEvaluationForm(${id}, '${s.mssv}')">Đánh giá</button>`
+                        }
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -299,18 +395,28 @@
 
         // Modal đánh giá
         async function openEvaluationForm(sid, stuid) {
-            currentSessionId = sid; currentStudentId = stuid;
+            currentSessionId = sid;
+            currentStudentId = stuid;
+
             const students = await getStudentsBySessionId(sid);
-            const stu = students.find(x => x.id === stuid);
+            const stu = students.find(x => x.mssv === stuid);  // ← sửa ở đây
+
+            if (!stu) return alert("Không tìm thấy sinh viên!");
 
             document.getElementById('studentInfoDisplay').innerHTML = `
                 <div><strong>MSSV:</strong> ${stu.mssv}</div>
                 <div><strong>Họ tên:</strong> ${stu.name}</div>
-                <div><strong>Tham gia:</strong> ${stu.participated}</div>
+                <div><strong>Tham gia:</strong> ${stu.participated || 'Chưa xác định'}</div>
             `;
+
             document.getElementById('evaluationDetail').value = stu.comment || '';
-            document.querySelectorAll('.rating-btn').forEach(b=>b.classList.remove('selected'));
-            if (stu.rating) document.querySelector(`.rating-btn[data-val="${stu.rating}"]`)?.classList.add('selected');
+            
+            // Xóa selected cũ
+            document.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('selected'));
+            // Chọn lại nếu đã có đánh giá
+            if (stu.rating) {
+                document.querySelector(`.rating-btn[data-val="${stu.rating}"]`)?.classList.add('selected');
+            }
 
             document.getElementById('evaluationModal').classList.add('open');
         }
@@ -320,14 +426,40 @@
         }
         async function submitEvaluation(e) {
             e.preventDefault();
-            const rating = document.querySelector('.rating-btn.selected')?.textContent;
-            const comment = document.getElementById('evaluationDetail').value.trim();
-            if (!rating || !comment) return alert('Vui lòng chọn mức đánh giá và nhập nhận xét');
 
-            await saveStudentEvaluation(currentSessionId, currentStudentId, rating, comment);
-            alert('Đánh giá đã lưu thành công!');
-            closeEvaluationForm();
-            openStudentList(currentSessionId);
+            const ratingBtn = document.querySelector('.rating-btn.selected');
+            const rating = ratingBtn ? ratingBtn.textContent : null;
+            const comment = document.getElementById('evaluationDetail').value.trim();
+
+            if (!rating) {
+                showToast('Vui lòng chọn mức đánh giá!', 'error');
+                return;
+            }
+            if (!comment) {
+                showToast('Vui lòng nhập nhận xét chi tiết!', 'error');
+                return;
+            }
+
+            try {
+                const success = await saveStudentEvaluation(
+                    thongtin.keyuser,
+                    currentSessionId,
+                    currentStudentId,
+                    rating,
+                    comment
+                );
+
+                if (success) {
+                    showToast('Đánh giá đã được lưu thành công!', 'success');
+                    closeEvaluationForm();
+                    openStudentList(currentSessionId); // làm mới danh sách
+                } else {
+                    showToast('Lưu đánh giá thất bại. Vui lòng thử lại!', 'error');
+                }
+            } catch (error) {
+                console.error('Lỗi khi lưu đánh giá:', error);
+                showToast('Có lỗi xảy ra khi gửi dữ liệu!', 'error');
+            }
         }
 
         // Filter & Search
@@ -346,7 +478,44 @@
         }
 
         // Khởi động
-        document.addEventListener('DOMContentLoaded', renderSessions);
+        document.addEventListener('DOMContentLoaded', () => {
+            // Nếu đã có thongtin → render ngay
+            if (thongtin && thongtin.keyuser) {
+                renderSessions();
+                return;
+            }
+
+            // Nếu chưa có → cứ mỗi 300ms check 1 lần, có rồi thì render luôn và dừng check
+            const checkInterval = setInterval(() => {
+                if (thongtin && thongtin.keyuser) {
+                    clearInterval(checkInterval);
+                    renderSessions();
+                }
+            }, 300);
+        });
+        // Hàm hiển thị thông báo đẹp
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+
+            toast.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            // Tự động xóa sau 4 giây
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.5s ease forwards';
+                toast.addEventListener('animationend', () => toast.remove());
+            }, 4000);
+        }
     </script>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
 </body>
 </html>

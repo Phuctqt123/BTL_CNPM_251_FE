@@ -1,5 +1,5 @@
 // [FILE: data.js]
-import TutorApi from "../api/tutorAPI.js"; // Đảm bảo đường dẫn này đúng
+import TutorApi from "../api/TutorAPI.js";// Đảm bảo đường dẫn này đúng
 
 // Biến chứa dữ liệu (dùng làm mặc định nếu lỗi)
 let _localProfileData = {
@@ -66,6 +66,8 @@ async function getTutorProfile(id) {
   }
 }
 
+
+
 // --- HÀM 2: Mock Data (Giữ lại để phòng hờ) ---
 function fetchProfileData() {
   return new Promise(resolve => setTimeout(() => resolve(_localProfileData), 300));
@@ -73,9 +75,36 @@ function fetchProfileData() {
 
 // --- HÀM 3: Tạo Session (Giữ nguyên code của bạn) ---
 function create_session(raw) {
-  // ... (Code cũ của bạn giữ nguyên) ...
-  // Để ngắn gọn mình không paste lại đoạn này, hãy giữ nguyên logic cũ
-  return TutorApi.createSession(raw);
+  // Hàm format datetime thành: YYYY-MM-DD HH:mm:ss
+  function formatDate(dt) {
+    if (!dt) return null;
+    const d = new Date(dt);
+    const pad = (n) => n.toString().padStart(2, '0');
+
+    return (
+      d.getFullYear() + "-" +
+      pad(d.getMonth() + 1) + "-" +
+      pad(d.getDate()) + " " +
+      pad(d.getHours()) + ":" +
+      pad(d.getMinutes()) + ":" +
+      pad(d.getSeconds())
+    );
+  }
+
+  const data = {
+    gvKey: raw.creator?.keyuser || null,
+    tenBuoi: raw.title || null,
+    hinhThuc: raw.format ? raw.format.charAt(0).toUpperCase() + raw.format.slice(1) : null,
+    thoiGianBD: formatDate(raw.start_time),
+    thoiGianKT: formatDate(raw.end_time),
+    ghiChu: raw.notes || null,
+    diaChi: raw.location || null,
+    linkGgmeet: raw.online_link || null,
+    slToiThieu: raw.min_students || null,
+    slToiDa: raw.max_students || null
+  };
+
+  return TutorApi.createSession(data);
 }
 
 // --- PUBLIC RA GLOBAL ---

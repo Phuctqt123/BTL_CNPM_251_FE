@@ -39,7 +39,12 @@ const TutorApi = {
     // Đánh giá sinh viên
     reviewStudent(data) {
         return axiosClient.post(`/api/tutor/reviews`, data);
-    }
+    },
+    // Lấy danh sách sinh viên tham gia buổi tư vấn đó
+    getliststudent(id) {
+        return axiosClient.get(`/api/tutor/students/${id}`);
+    },
+    
 };
 
 export default TutorApi;

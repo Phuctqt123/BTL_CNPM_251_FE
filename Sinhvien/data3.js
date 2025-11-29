@@ -22,7 +22,15 @@ async function getEvents() {
     const data = await StudentApi.getUpComing();
     const list = Array.isArray(data) ? data : [];
 
-    return list.map(item => {
+    let registeredList = [];
+    try {
+      const registeredData = await StudentApi.getRegisteredList(window.thongtin.keyuser);
+      if(Array.isArray(registeredData)) registeredList = registeredData.map(r => r.BuoiTuVan_id);
+    } catch (error) {
+      console.error("Không lấy được danh sách đã đăng ký để đối chiếu", error);
+    }
+
+    const mappedList = list.map(item => {
       let locationDisplay = item.Dia_chi;
       if (!locationDisplay || locationDisplay.trim() === "") {
           locationDisplay = item.Hinh_thuc || "Online"; 
@@ -33,6 +41,10 @@ async function getEvents() {
       const endTime = item.Thoi_gian_ket_thuc ? item.Thoi_gian_ket_thuc.split('T')[1].substring(0, 5) : "--";
       const dateDisplay = item.Thoi_gian_bat_dau ? item.Thoi_gian_bat_dau.split('T')[0] : "--";
 
+      let finalStatus = convertStatus(item);
+
+      if (registeredList.includes(item.BuoiTuVan_id)) finalStatus = "registered";
+
       return {
         id: item.BuoiTuVan_id,
         title: item.Ten_buoi_van,
@@ -40,9 +52,10 @@ async function getEvents() {
         date: dateDisplay,
         location: locationDisplay,
         time: `${startTime} - ${endTime}`,
-        status: convertStatus(item)
+        status: finalStatus
       };
     });
+    return mappedList.filter(item => item.status !== 'registered');
   } catch (error) {
     console.error("Lỗi khi lấy danh sách sự kiện:", error);
     return [];
@@ -95,18 +108,75 @@ async function getEvents() {
 //   });
 // }
 
+function checkTime(targetEvent, allEvents) {
+  if(!targetEvent.Thoi_gian_bat_dau || !targetEvent.Thoi_gian_ket_thuc) return false;
+
+  const newStart = new Date(targetEvent.Thoi_gian_bat_dau).getTime();
+  const newEnd = new Date(targetEvent.Thoi_gian_ket_thuc).getTime();
+
+  if (isNaN(newStart) || isNaN(newEnd)) return null;
+
+  const registeredEvents = allEvents.filter(e => e.status === 'registered');
+
+  for (const event of registeredEvents) {
+    if (event.id === targetEvent.id) continue;
+
+    if (!event.Thoi_gian_bat_dau || !event.Thoi_gian_ket_thuc) continue;
+
+    const existingStart = new Date(event.Thoi_gian_bat_dau).getTime();
+    const existingEnd = new Date(event.Thoi_gian_ket_thuc).getTime();
+
+    if (newStart < existingEnd && newEnd > existingStart) {
+      return event;
+    }
+  }
+  return null;
+}
+
 async function signupEvent(eventId) {
+  const currentEvents = window.eventsData || [];
+  const targetEvent = currentEvents.find(e => e.id == eventId);
+
+  if (!targetEvent) {
+    alert('Không tìm thấy thông tin buổi tư vấn.');
+    return;
+  }
+
+  const  conflictEvent = checkTime(targetEvent, currentEvents);
+  if (conflictEvent) {
+    alert(`Không thể đăng ký!\n\nBạn bị trùng lịch với buổi: "${conflictEvent}"\n(Thời gian: ${conflictEvent.time} ngày ${conflictEvent.date})`)
+    return;
+  }
   if (!confirm('Bạn có muốn đăng ký buổi tư vấn này không?')) {
     return;
   }
     
   try {
-    await StudentApi.registerSession(window.thongtin.keyuser, eventId);
-    alert('Đăng ký thành công! (ID: ' + eventId + ')'),
-    location.reload()
+    const data = await StudentApi.registerSession(window.thongtin.keyuser, eventId);
+    const list = Array.isArray(data) ? data[0] : data;
+
+    if (!list) {
+      alert('Đăng ký thành công! (ID: ' + eventId + ')');
+      targetEvent.status = 'registered';
+      window.eventsData = window.eventsData.filter(e => e.id != eventId);
+      if(typeof window.renderEvents === 'function') {
+        window.renderEvents();
+      }
+      return;
+    }
+    if (list.status == 'success'){
+      window.eventsData = window.eventsData.filter(e => e.id != eventId);
+      alert('Đăng ký thành công! (ID: ' + eventId + ')');
+      if(typeof window.renderEvents === 'function') {
+        window.renderEvents();
+      }
+    } else {
+      const errorMessage = list.message || "Đăng ký không thành công (Lỗi không xác định)";
+      throw new Error(errorMessage);
+    }
   } catch(error) {
     console.error("Lỗi khi đăng ký:", error);
-    const msg = error.response?.data?.message || "Lỗi hệ thống hoặc lớp đã đầy";
+    const msg = error.message || error.response?.data?.message || "Lỗi hệ thống hoặc lớp đã đầy";
     alert('Đăng ký thất bại:' + msg)
   }
 };

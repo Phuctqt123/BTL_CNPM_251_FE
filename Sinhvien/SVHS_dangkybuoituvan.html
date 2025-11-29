@@ -245,7 +245,7 @@
     const locationFilter = document.getElementById('locationFilter');
     const timeFilter = document.getElementById('timeFilter');
 
-    let eventsData = []; // sẽ được gán sau khi gọi API
+    window.evenetsData = []; // sẽ được gán sau khi gọi API
 
     // Hàm suy ra buổi từ giờ
     function getSession(timeStr) {
@@ -317,7 +317,7 @@
       return card;
     }
 
-    function renderEvents() {
+    window.renderEvents = function() {
       eventsGrid.innerHTML = '';
       eventsData.forEach(event => eventsGrid.appendChild(createEventCard(event)));
       filterEvents();
@@ -375,8 +375,8 @@
       eventsGrid.innerHTML = '<p style="text-align:center; padding:40px; color:#666;">Đang tải danh sách buổi tư vấn...</p>';
 
       try {
-        eventsData = await getEvents();  // <-- gọi hàm từ data3.js
-        renderEvents();
+        window.eventsData = await window.getEvents();  // <-- gọi hàm từ data3.js
+        window.renderEvents();
       } catch (err) {
         eventsGrid.innerHTML = '<p style="text-align:center; color:red;">Lỗi tải dữ liệu. Vui lòng thử lại sau.</p>';
         console.error(err);

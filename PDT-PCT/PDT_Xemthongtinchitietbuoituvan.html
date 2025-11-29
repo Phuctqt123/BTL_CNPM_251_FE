@@ -347,7 +347,7 @@
           const response = await fetch('http://localhost:8087/userinfo', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ticket, service: serviceUrl })
+              body: JSON.stringify({ ticket, service: serviceUrl.split('?')[0] })
           });
 
           const data = await response.json();

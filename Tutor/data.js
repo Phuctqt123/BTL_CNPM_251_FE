@@ -1,4 +1,5 @@
 // data.js - Tất cả dữ liệu cá nhân được gộp vào một object duy nhất
+import TutorApi from "../api/TutorAPI.js";
 const profileData = {
   personalInfo: {
     "Họ và tên lót": "Nguyễn Văn",
@@ -44,8 +45,43 @@ function getProfileDataSync() {
   return profileData;
 }
 
+
+function create_session(raw) {
+  // Hàm format datetime thành: YYYY-MM-DD HH:mm:ss
+  function formatDate(dt) {
+    if (!dt) return null;
+    const d = new Date(dt);
+    const pad = (n) => n.toString().padStart(2, '0');
+
+    return (
+      d.getFullYear() + "-" +
+      pad(d.getMonth() + 1) + "-" +
+      pad(d.getDate()) + " " +
+      pad(d.getHours()) + ":" +
+      pad(d.getMinutes()) + ":" +
+      pad(d.getSeconds())
+    );
+  }
+
+  const data = {
+    gvKey: raw.creator?.keyuser || null,
+    tenBuoi: raw.title || null,
+    hinhThuc: raw.format ? raw.format.charAt(0).toUpperCase() + raw.format.slice(1) : null,
+    thoiGianBD: formatDate(raw.start_time),
+    thoiGianKT: formatDate(raw.end_time),
+    ghiChu: raw.notes || null,
+    diaChi: raw.location || null,
+    linkGgmeet: raw.online_link || null,
+    slToiThieu: raw.min_students || null,
+    slToiDa: raw.max_students || null
+  };
+
+  return TutorApi.createSession(data);
+}
+
 // Export nếu dùng module (ES6)
 // export { fetchProfileData, getProfileDataSync, profileData };
+window.create_session=create_session;
 window.profileData=profileData;
 window.fetchProfileData=fetchProfileData;
 window.getProfileDataSync=getProfileDataSync;

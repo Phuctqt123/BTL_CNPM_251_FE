@@ -155,21 +155,17 @@ async function signupEvent(eventId) {
     const data = await StudentApi.registerSession(window.thongtin.keyuser, eventId);
     const list = Array.isArray(data) ? data[0] : data;
 
-    if (!list) {
+    if (!list || list.status === 'success') {
       alert('Đăng ký thành công! (ID: ' + eventId + ')');
       targetEvent.status = 'registered';
-      window.eventsData = window.eventsData.filter(e => e.id != eventId);
+      const index = window.eventsData.findIndex(e => e.id == eventId);
+      if (index !== -1) {
+          window.eventsData.splice(index, 1);
+      }
       if(typeof window.renderEvents === 'function') {
         window.renderEvents();
       }
       return;
-    }
-    if (list.status == 'success'){
-      window.eventsData = window.eventsData.filter(e => e.id != eventId);
-      alert('Đăng ký thành công! (ID: ' + eventId + ')');
-      if(typeof window.renderEvents === 'function') {
-        window.renderEvents();
-      }
     } else {
       const errorMessage = list.message || "Đăng ký không thành công (Lỗi không xác định)";
       throw new Error(errorMessage);

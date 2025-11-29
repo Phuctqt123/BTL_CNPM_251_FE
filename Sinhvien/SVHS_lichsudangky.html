@@ -620,7 +620,7 @@
 </head>
 <body>
   <iframe src="../header.html" style="width: 100%; border: none; overflow: hidden; display: block;"></iframe>
-  <script>
+  <!-- <script>
       let thongtin = null;
       const urlParams = new URLSearchParams(window.location.search);
       const ticket = urlParams.get('ticket');
@@ -665,9 +665,10 @@
       // BẮT ĐẦU CHƯƠNG TRÌNH
       (async () => {
             thongtin = await run();
+            window.thongtin = thongtin;
         })(); 
 
-  </script>
+  </script> -->
   <div class="main-container">
     <main>
       <h2 class="page-title">Lịch Sử Đăng Ký Buổi Tư Vấn</h2>
@@ -739,21 +740,69 @@
   <script>
     let historyData = { sessions: [] }; // sẽ được gán từ API
     let currentSessionId = null;
+    let thongtin = null;
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const ticket = urlParams.get('ticket');
+      // const serviceUrl = window.location.href;
+      const serviceUrl = window.location.origin + window.location.pathname;
+
+      function removeTicketFromUrl() {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('ticket');  // chỉ xóa ticket
+          window.history.replaceState({}, document.title, url.toString());
+      }
+
+      async function run() {
+
+          if (!ticket) {
+              window.location.href =
+                  `https://casserver-production.up.railway.app/cas/login?service=${encodeURIComponent(serviceUrl)}`;
+              return; // dừng luôn không chạy tiếp
+          }
+
+          // ⏳ CHỜ fetch xử lý xong
+          const response = await fetch('http://localhost:8087/userinfo', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ticket, service: serviceUrl.split('?')[0] })
+          });
+
+          const data = await response.json();
+
+          if (!data.success) {
+              removeTicketFromUrl();
+              return null;
+          }
+
+          removeTicketFromUrl();
+          return data.attributes
+          
+      }
+
+      // BẮT ĐẦU CHƯƠNG TRÌNH
 
     // ================== GỌI API KHI LOAD TRANG ==================
-    document.addEventListener('DOMContentLoaded', async () => {
+    // document.addEventListener('DOMContentLoaded', async () => {
+    async function loadHistoryData() {
       const grid = document.getElementById('sessionsGrid');
       grid.innerHTML = '<p style="grid-column: 1 / -1; text-align:center; padding:60px 20px; color:#666; font-size:1.1rem;">Đang tải lịch sử đăng ký...</p>';
 
       try {
-        const data = await getHistoryData();  // Gọi API từ data4.js
+        const myId = window.thongtin ? window.thongtin.keyuser : null;
+        const data = await getHistoryData(myId);  // Gọi API từ data4.js
         historyData = data;
         renderSessions(historyData.sessions);
       } catch (err) {
         grid.innerHTML = '<p style="grid-column: 1 / -1; text-align:center; color:#e74c3c; padding:60px;">Lỗi tải dữ liệu. Vui lòng thử lại sau!</p>';
         console.error("Lỗi tải lịch sử:", err);
       }
-    });
+    };
+    (async () => {
+      thongtin = await run();
+      window.thongtin = thongtin;
+      await loadHistoryData();
+    })(); 
 
     function renderSessions(sessions) {
       const grid = document.getElementById('sessionsGrid');
@@ -885,13 +934,13 @@
       // TODO: Gửi về backend ở đây
     }
 
-    function cancelRegistration(sessionId) {
-      if (confirm('Bạn có chắc chắn muốn hủy đăng ký buổi tư vấn này?')) {
-        alert('Hủy đăng ký thành công! (Buổi ID: ' + sessionId + ')');
-        // TODO: Gọi API hủy thật
-        location.reload(); // demo
-      }
-    }
+    // function cancelRegistration(sessionId) {
+    //   if (confirm('Bạn có chắc chắn muốn hủy đăng ký buổi tư vấn này?')) {
+    //     alert('Hủy đăng ký thành công! (Buổi ID: ' + sessionId + ')');
+    //     // TODO: Gọi API hủy thật
+    //     location.reload(); // demo
+    //   }
+    // }
 
     // Filter & Search
     function filterSessions(filter) {

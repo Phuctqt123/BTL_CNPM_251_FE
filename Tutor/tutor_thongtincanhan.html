@@ -190,17 +190,24 @@
               return null;
           }
 
-          let thongtin2 = data.attributes;
-
           removeTicketFromUrl();
-          return data.attributes
-          
+          return data.attributes;          
       }
 
       // BẮT ĐẦU CHƯƠNG TRÌNH
       (async () => {
-            thongtin = await run();
-        })(); 
+          thongtin = await run();
+
+          if (thongtin) {
+            console.log("Đã có thông tin user:", thongtin);
+            const checkRender = setInterval(() => {
+              if (typeof renderProfile === 'function' && window.getTutorProfile) {
+                clearInterval(checkRender);
+                renderProfile(); 
+              }
+            }, 100);
+          }
+        })();
 
   </script>
   <!-- Main Content -->
@@ -253,53 +260,56 @@
 
     // Render toàn bộ profile
     async function renderProfile() {
-      const container = document.getElementById('mainContent');
+        const container = document.getElementById('mainContent');
 
-      try {
-        // Gọi API giả lập
-        const data = await fetchProfileData(); // hoặc dùng getProfileDataSync() nếu muốn đồng bộ
+        const userId = thongtin ? thongtin.keyuser : null;
+        console.log("Render với UserID:", userId);
 
-        // Xóa loading
-        container.innerHTML = '';
+        try {
+          let data;
 
-        // Tạo các section
-        const personalSection = createSection(
-          'Thông Tin Cá Nhân',
-          'fas fa-user',
-          data.personalInfo
-        );
-        const contactSection = createSection(
-          'Thông Tin Liên Lạc',
-          'fas fa-phone-alt',
-          data.contactInfo
-        );
-        const residenceSection = createSection(
-          'Thông Tin Thường Trú',
-          'fas fa-home',
-          data.residenceInfo
-        );
+          if (userId && window.getTutorProfile) {
+            data = await window.getTutorProfile(userId);
+          } else {
+            console.warn("Không có UserID, dùng dữ liệu mẫu.");
+            data = await window.fetchProfileData();
+          }
 
-        // Thêm vào DOM
-        container.appendChild(personalSection);
-        container.appendChild(contactSection);
-        container.appendChild(residenceSection);
+          if (userId && window.getTutorProfile) {
+            data = await window.getTutorProfile(userId);
+          } else {
+            console.warn("Không tìm thấy User ID, dùng dữ liệu mẫu.");
+            data = await window.fetchProfileData();
+          }
 
-      } catch (err) {
-        container.innerHTML = '<div style="text-align:center;color:red;padding:40px;">Lỗi tải dữ liệu. Vui lòng thử lại!</div>';
-        console.error(err);
+          container.innerHTML = '';
+
+          if (data) {
+            container.appendChild(createSection('Thông Tin Cá Nhân', 'fas fa-user', data.personalInfo));
+            container.appendChild(createSection('Thông Tin Liên Lạc', 'fas fa-phone-alt', data.contactInfo));
+            container.appendChild(createSection('Thông Tin Thường Trú', 'fas fa-home', data.residenceInfo));
+          }
+
+        } catch (err) {
+          container.innerHTML = '<div style="text-align:center;color:red;padding:40px;">Lỗi tải dữ liệu.</div>';
+          console.error(err);
+        }
       }
-    }
 
-    // Chạy khi trang tải xong và data.js đã sẵn sàng
-    document.addEventListener('DOMContentLoaded', () => {
-      // Đảm bảo profileData đã được load từ data.js
-      if (typeof fetchProfileData === 'function') {
-        renderProfile();
-      } else {
-        // Nếu vì lý do nào đó data.js chưa load, thử lại sau 100ms
-        setTimeout(renderProfile, 100);
-      }
-    });
+      // Chạy khi trang tải xong và data.js đã sẵn sàng
+      document.addEventListener('DOMContentLoaded', () => {
+        // Kiểm tra biến thongtin đã có chưa (được set ở đoạn script trên cùng)
+        // Do hàm run() là async, ta cần chờ nó chạy xong.
+        // Tuy nhiên, logic tốt nhất là gọi renderProfile() NGAY SAU KHI run() xong.
+
+        // Sửa lại đoạn gọi logic chính:
+        const checkInterval = setInterval(() => {
+          if (window.getTutorProfile && typeof thongtin !== 'undefined') {
+            clearInterval(checkInterval);
+            renderProfile();
+          }
+        }, 100);
+      });
   </script>
 </body>
 </html>

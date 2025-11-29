@@ -1,22 +1,41 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+    /* ... (GIỮ NGUYÊN CSS CŨ CỦA BẠN) ... */
     @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-30px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(-8px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
-    body { margin: 0; font-family: 'Poppins', sans-serif; }
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+    }
 
     .header {
       background: linear-gradient(135deg, #0388B4 0%, #026689 100%);
@@ -40,7 +59,9 @@
       transition: all 0.3s ease;
     }
 
-    .header-left:hover { transform: translateX(5px); }
+    .header-left:hover {
+      transform: translateX(5px);
+    }
 
     .logo {
       width: 48px;
@@ -88,7 +109,7 @@
       color: #e74c3c;
       min-width: 160px;
       border-radius: 10px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
       opacity: 0;
       visibility: hidden;
       transform: translateY(-10px);
@@ -124,16 +145,30 @@
     }
 
     @media (max-width: 768px) {
-      .header { padding: 15px 20px; }
-      .logo { width: 40px; height: 40px; }
-      .header-title .main-title { font-size: 16px; }
-      .logout-dropdown { top: 52px; right: 5px; }
+      .header {
+        padding: 15px 20px;
+      }
+
+      .logo {
+        width: 40px;
+        height: 40px;
+      }
+
+      .header-title .main-title {
+        font-size: 16px;
+      }
+
+      .logout-dropdown {
+        top: 52px;
+        right: 5px;
+      }
     }
   </style>
 </head>
+
 <body>
   <div class="header">
-    <div class="header-left" onclick="window.location.href='/'">
+    <div class="header-left" onclick="goHome()">
       <img src="logoBK.png" alt="Logo BK HCMUT" class="logo">
       <div class="header-title">
         <div class="subtitle">HỆ THỐNG TƯ VẤN</div>
@@ -144,7 +179,6 @@
     <div class="header-right">
       <i class="fas fa-user-circle user-icon" aria-label="Tài khoản"></i>
 
-      <!-- Chỉ có 1 mục Đăng xuất -->
       <div class="logout-dropdown">
         <div class="logout-item" onclick="logout()">
           <i class="fas fa-sign-out-alt"></i>
@@ -155,6 +189,23 @@
   </div>
 
   <script>
+    function goHome() {
+      const parentWindow = window.parent || window;
+      const { origin, pathname } = parentWindow.location;
+      const normalizedPath = pathname.toLowerCase();
+
+      let targetPath = '/';
+      if (normalizedPath.includes('/tutor/')) {
+        targetPath = '/tutor/home';
+      } else if (normalizedPath.includes('/sv/')) {
+        targetPath = '/sv/home';
+      } else if (normalizedPath.includes('/pdt/')) {
+        targetPath = '/pdt/home';
+      }
+
+      parentWindow.location.href = `${origin}${targetPath}`;
+    }
+
     function logout() {
       if (confirm('Bạn có chắc muốn đăng xuất không?')) {
         // Cách chắc chắn nhất với Railway CAS
@@ -162,7 +213,7 @@
         form.method = 'POST';
         form.action = 'https://casserver-production.up.railway.app/cas/logout';
         form.target = '_blank'; // mở tab mới (tránh bị chặn redirect)
-        
+
         // Một số CAS cần thêm field ẩn để logout sạch hơn
         const input = document.createElement('input');
         input.type = 'hidden';
@@ -176,8 +227,9 @@
 
         // Sau 2 giây quay lại trang chủ sạch
         setTimeout(() => {
-          const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
-          window.location.replace(cleanUrl);
+          // Trỏ về index.html thay vì root
+          const cleanUrl = window.location.origin + '/index.html';
+          window.parent.location.replace(cleanUrl);
         }, 2000);
       }
     }
@@ -192,4 +244,5 @@
     });
   </script>
 </body>
+
 </html>

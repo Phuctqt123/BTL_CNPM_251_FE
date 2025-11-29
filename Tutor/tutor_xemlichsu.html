@@ -273,7 +273,7 @@
 
                     const actions = s.status === 'upcoming'
                         ? `<button class="action-btn btn-download" onclick="openDocumentsManagement(${s.id})">Tài Liệu</button>
-                           <button class="action-btn btn-cancel" onclick="alert('Hủy buổi này?')">Hủy</button>`
+                           <button class="action-btn btn-cancel" onclick="huybuoituvan(${s.id})">Hủy</button>`
                         : `<button class="action-btn btn-download" onclick="openDocumentsManagement(${s.id})">Tài Liệu</button>
                            <button class="action-btn btn-evaluate" onclick="openStudentList(${s.id})">Đánh Giá</button>`;
 
@@ -290,6 +290,26 @@
                     grid.appendChild(card);
                 });
             } catch (e) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:red">Lỗi tải dữ liệu!</div>'; }
+        }
+
+        async function huybuoituvan(id_session) {
+            if (!confirm('Bạn có chắc chắn muốn hủy buổi tư vấn này không?')) {
+                return ;
+            }
+
+            try {
+                const success = await huy_buoi_tuvan(thongtin.keyuser, id_session);
+
+                if (success) {
+                    showToast('Hủy thành công!', 'success');
+                    renderSessions(); 
+                } else {
+                    showToast('Hủy thất bại!', 'error');
+                }
+            } catch (error) {
+                console.error('Lỗi :', error);
+                showToast('Có lỗi xảy ra khi hủy!', 'error');
+            }
         }
 
         // Tài liệu

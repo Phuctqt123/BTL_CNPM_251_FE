@@ -172,12 +172,21 @@ function delete_document(gvKey, buoiId, taiLieuId) {
     return TutorApi.deleteDocument(data);
 }
 
+
+function huy_buoi_tuvan(gvKey, id_session){
+    const data = {
+        gvKey: gvKey,
+        buoiId: id_session
+    };
+    return TutorApi.cancelSession(data);
+}
 // Thêm 1 tài liệu vào buổi tư vấn
 
 // Export nếu dùng module (ES6), hoặc để global cũng được
 // export { getSessionsData, getDocumentsBySessionId, getStudentsBySessionId, saveStudentEvaluation };
 
 // Nếu không dùng module, các hàm sẽ nằm trong window để dùng toàn cục
+window.huy_buoi_tuvan=huy_buoi_tuvan
 window.add_document = add_document;
 window.delete_document = delete_document;
 window.getSessionsData = getSessionsData;

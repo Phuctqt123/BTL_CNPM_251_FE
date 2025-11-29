@@ -137,7 +137,8 @@
       let thongtin = null;
       const urlParams = new URLSearchParams(window.location.search);
       const ticket = urlParams.get('ticket');
-      const serviceUrl = window.location.href;
+      // const serviceUrl = window.location.href;
+      const serviceUrl = window.location.origin + window.location.pathname;
 
       function removeTicketFromUrl() {
           const url = new URL(window.location.href);
@@ -177,6 +178,7 @@
       // BẮT ĐẦU CHƯƠNG TRÌNH
       (async () => {
             thongtin = await run();
+            window.thongtin = thongtin;
         })(); 
 
   </script>
@@ -258,14 +260,15 @@
     function createEventCard(event) {
       const card = document.createElement('div');
       card.className = 'event-card';
-      card.dataset.status = event.status;
-      card.dataset.date = event.date;
-      card.dataset.title = event.title.toLowerCase();
-      card.dataset.instructor = event.instructor.toLowerCase();
-      card.dataset.location = event.location.toLowerCase();
-      card.dataset.time = event.time.toLowerCase();
+      card.dataset.status = event.status || "";
+      card.dataset.date = event.date || "";
+      card.dataset.title = (event.title || " ").toLowerCase();
+      card.dataset.instructor = (event.instructor || "").toLowerCase();
+      card.dataset.location = (event.location || "").toLowerCase();
+      card.dataset.time = (event.time || "").toLowerCase();
 
-      const session = getSession(event.time);
+      // const session = getSession(event.time);
+      const session = event.time ? getSession(event.time) : "";
       card.dataset.session = session;
 
       let footer = '';
@@ -348,13 +351,13 @@
       }
     };
 
-    // Hàm đăng ký (demo)
-    window.signupEvent = function(id) {
-      if (confirm('Bạn có muốn đăng ký buổi tư vấn này không?')) {
-        alert('Đăng ký thành công! (ID: ' + id + ')');
-        location.reload();
-      }
-    };
+    // // Hàm đăng ký (demo)
+    // window.signupEvent = function(id) {
+    //   if (confirm('Bạn có muốn đăng ký buổi tư vấn này không?')) {
+    //     alert('Đăng ký thành công! (ID: ' + id + ')');
+    //     location.reload();
+    //   }
+    // };
 
     // Sự kiện filter
     filterButtons.forEach(btn => btn.addEventListener('click', () => {

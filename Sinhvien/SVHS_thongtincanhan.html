@@ -39,7 +39,7 @@
       let thongtin = null;
       const urlParams = new URLSearchParams(window.location.search);
       const ticket = urlParams.get('ticket');
-      const serviceUrl = window.location.href;
+      const serviceUrl = window.location.origin + window.location.pathname;
 
       function removeTicketFromUrl() {
           const url = new URL(window.location.href);
@@ -98,7 +98,7 @@
   </div>
 
   <!-- Load dữ liệu -->
-  <script type="module" src="/Sinhvien/data2.js"></script>
+  <script type="module" src="/sv/data2"></script>
   <script>
     // === CHỈ SỬA PHẦN NÀY – GIỮ NGUYÊN GIAO DIỆN ===
     async function renderProfile() {
@@ -106,7 +106,6 @@
       
       try {
         // Lấy dữ liệu từ data2.js (có hàm getStudentProfile)
-        console.log(thongtin);
         const profile = await getStudentProfile(thongtin.keyuser);
 
         container.innerHTML = '';

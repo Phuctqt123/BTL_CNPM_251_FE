@@ -624,7 +624,8 @@
       let thongtin = null;
       const urlParams = new URLSearchParams(window.location.search);
       const ticket = urlParams.get('ticket');
-      const serviceUrl = window.location.href;
+      // const serviceUrl = window.location.href;
+      const serviceUrl = window.location.origin + window.location.pathname;
 
       function removeTicketFromUrl() {
           const url = new URL(window.location.href);

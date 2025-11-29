@@ -4,14 +4,14 @@ const StudentApi = {
     getProfile(id) {
         return axiosClient.get(`/api/student/profile/${id}`);
     },
-    registerSession(data) {
-        return axiosClient.post(`/api/student/session/register`, data);
+    registerSession(svKey, sessionId) {
+        return axiosClient.post(`/api/student/session/register`, {svKey, sessionId});
     },
     getDocuments(sessionId) {
         return axiosClient.get(`/api/student/session/${sessionId}/documents`);
     },
-    cancelSession(data) {
-        return axiosClient.post(`/api/student/session/cancel_student`, data);
+    cancelSession(svKey, sessionId) {
+        return axiosClient.post(`/api/student/session/cancel_student`, {svKey, sessionId});
     },
     getRegisteredList(id) {
         return axiosClient.get(`/api/student/registered-sessionn/${id}`);

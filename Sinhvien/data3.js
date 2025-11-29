@@ -1,12 +1,10 @@
 // data3.js – mô phỏng API trả về danh sách sự kiện
 import StudentApi from "../api/StudentAPI.js";
 
-function convertStatus(item) {
-  if (!item) return "available";
+function convertStatus(item, registeredIds) {
+  if (registeredIds.includes(String(item.BuoiTuVan_id))) return "registered";
 
-  if (item.Da_day_cho === true) return "full";
-
-  if (item.So_luong_dang_ky >= item.So_luong_toi_da) return "full";
+  if (item.Da_day_cho === true || (item.So_luong_dang_ky >= item.So_luong_toi_da)) return "full";
 
   if (item.Thoi_gian_ket_thuc) {
     const now = new Date();
@@ -19,31 +17,35 @@ function convertStatus(item) {
 
 async function getEvents() {
   try {
-    const data = await StudentApi.getUpComing();
-    const list = Array.isArray(data) ? data : [];
+    const [upcomingData, registeredData] = await Promise.all([
+      StudentApi.getUpComing(),
+      StudentApi.getRegisteredList(window.thongtin.keyuser)
+    ]);
+
+    let upcomingList = [];
+    if (Array.isArray(upcomingData)) upcomingList = upcomingData;
+    else if (upcomingData && Array.isArray(upcomingData.data)) upcomingList = upcomingData.data;
 
     let registeredList = [];
-    try {
-      const registeredData = await StudentApi.getRegisteredList(window.thongtin.keyuser);
-      if(Array.isArray(registeredData)) registeredList = registeredData.map(r => String(r.BuoiTuVan_id));
-    } catch (error) {
-      console.error("Không lấy được danh sách đã đăng ký để đối chiếu", error);
-    }
+    if (Array.isArray(registeredData)) registeredList = registeredData;
+    else if (registeredData && Array.isArray(registeredData.data)) registeredList = registeredData.data;
 
-    const mappedList = list.map(item => {
-      let locationDisplay = item.Dia_chi;
-      if (!locationDisplay || locationDisplay.trim() === "") {
-          locationDisplay = item.Hinh_thuc || "Online"; 
+    const registeredIds = registeredList.map(r => String(r.BuoiTuVan_id));
+
+    window.myRegisteredSessions = registeredList;
+
+    const mappedList = upcomingList.map(item => {
+      let locationDisplay = "Chưa cập nhật";
+      if (item.Hinh_thuc && item.Hinh_thuc.toLowerCase() === 'online') {
+        locationDisplay = "Online (Google Meet)"; 
+      } else {
+        locationDisplay = item.Dia_chi;
       }
 
       // Xử lý giờ: Cắt chuỗi ISO "2026-01-10T11:00:00" -> lấy "11:00"
       const startTime = item.Thoi_gian_bat_dau ? item.Thoi_gian_bat_dau.split('T')[1].substring(0, 5) : "--";
       const endTime = item.Thoi_gian_ket_thuc ? item.Thoi_gian_ket_thuc.split('T')[1].substring(0, 5) : "--";
       const dateDisplay = item.Thoi_gian_bat_dau ? item.Thoi_gian_bat_dau.split('T')[0] : "--";
-
-      let finalStatus = convertStatus(item);
-
-      if (registeredList.includes(String(item.BuoiTuVan_id))) finalStatus = "registered";
 
       return {
         id: item.BuoiTuVan_id,
@@ -52,10 +54,16 @@ async function getEvents() {
         date: dateDisplay,
         location: locationDisplay,
         time: `${startTime} - ${endTime}`,
-        status: finalStatus
+        Thoi_gian_bat_dau: item.Thoi_gian_bat_dau,
+        Thoi_gian_ket_thuc: item.Thoi_gian_ket_thuc,
+        status: convertStatus(item, registeredIds)
       };
     });
-    return mappedList.filter(item => item.status !== 'registered');
+
+    const filteredList = mappedList.filter(item => item.status !== 'registered');
+    window.eventsData = filteredList;
+
+    return filteredList;
   } catch (error) {
     console.error("Lỗi khi lấy danh sách sự kiện:", error);
     return [];
@@ -109,25 +117,23 @@ async function getEvents() {
 // }
 
 function checkTime(targetEvent, allEvents) {
-  if(!targetEvent.Thoi_gian_bat_dau || !targetEvent.Thoi_gian_ket_thuc) return false;
+  if(!targetEvent.Thoi_gian_bat_dau || !targetEvent.Thoi_gian_ket_thuc) return null;
 
   const newStart = new Date(targetEvent.Thoi_gian_bat_dau).getTime();
   const newEnd = new Date(targetEvent.Thoi_gian_ket_thuc).getTime();
 
-  if (isNaN(newStart) || isNaN(newEnd)) return null;
+  const registeredSessions = window.myRegisteredSessions || [];
 
-  const registeredEvents = allEvents.filter(e => e.status === 'registered');
+  for (const session of registeredSessions) {
+    if (String(session.BuoiTuVan_id) === String(targetEvent.id)) continue;
 
-  for (const event of registeredEvents) {
-    if (event.id === targetEvent.id) continue;
+    if (!session.Thoi_gian_bat_dau || !session.Thoi_gian_ket_thuc) continue;
 
-    if (!event.Thoi_gian_bat_dau || !event.Thoi_gian_ket_thuc) continue;
-
-    const existingStart = new Date(event.Thoi_gian_bat_dau).getTime();
-    const existingEnd = new Date(event.Thoi_gian_ket_thuc).getTime();
+    const existingStart = new Date(session.Thoi_gian_bat_dau).getTime();
+    const existingEnd = new Date(session.Thoi_gian_ket_thuc).getTime();
 
     if (newStart < existingEnd && newEnd > existingStart) {
-      return event;
+      return session;
     }
   }
   return null;
@@ -135,16 +141,19 @@ function checkTime(targetEvent, allEvents) {
 
 async function signupEvent(eventId) {
   const currentEvents = window.eventsData || [];
-  const targetEvent = currentEvents.find(e => e.id == eventId);
+  const targetEvent = currentEvents.find(e => String(e.id) === String(eventId));
 
   if (!targetEvent) {
     alert('Không tìm thấy thông tin buổi tư vấn.');
     return;
   }
 
-  const  conflictEvent = checkTime(targetEvent, currentEvents);
+  const conflictEvent = checkTime(targetEvent);
   if (conflictEvent) {
-    alert(`Không thể đăng ký!\n\nBạn bị trùng lịch với buổi: "${conflictEvent}"\n(Thời gian: ${conflictEvent.time} ngày ${conflictEvent.date})`)
+    const conflictName = conflictEvent.Ten_buoi_van;
+    const conflictDate = conflictEvent.Thoi_gian_bat_dau('T')[0];
+    const conflictTime = conflictEvent.Thoi_gian_bat_dau('T')[1].substring(0, 5);
+    alert(`Không thể đăng ký!\n\nBạn bị trùng lịch với buổi: "${conflictName}"\n(Thời gian: ${conflictTime} ngày ${conflictDate})`)
     return;
   }
   if (!confirm('Bạn có muốn đăng ký buổi tư vấn này không?')) {
@@ -152,22 +161,25 @@ async function signupEvent(eventId) {
   }
     
   try {
-    const data = await StudentApi.registerSession(window.thongtin.keyuser, eventId);
-    const list = Array.isArray(data) ? data[0] : data;
+    let response = await StudentApi.registerSession({
+      svKey: window.thongtin.keyuser, 
+      buoiId: parseInt(eventId)
+    });
+    console.log("API Response:", response);
+    if (Array.isArray(response) && response.length > 0) {
+      response = response[0];
+    }
 
-    if (!list || list.status === 'success') {
+    if (response && (response.status === 'success')) {
       alert('Đăng ký thành công! (ID: ' + eventId + ')');
-      targetEvent.status = 'registered';
-      const index = window.eventsData.findIndex(e => e.id == eventId);
-      if (index !== -1) {
-          window.eventsData.splice(index, 1);
-      }
+      window.eventsData = window.eventsData.filter(e => String(e.id) !== String(eventId));
       if(typeof window.renderEvents === 'function') {
         window.renderEvents();
       }
-      return;
+
+      getEvents();
     } else {
-      const errorMessage = list.message || "Đăng ký không thành công (Lỗi không xác định)";
+      const errorMessage = response.message || "Đăng ký không thành công (Lỗi không xác định)";
       throw new Error(errorMessage);
     }
   } catch(error) {

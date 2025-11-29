@@ -39,7 +39,7 @@
       let thongtin = null;
       const urlParams = new URLSearchParams(window.location.search);
       const ticket = urlParams.get('ticket');
-      const serviceUrl = window.location.origin + window.location.pathname;
+      const serviceUrl = window.location.href;
 
       function removeTicketFromUrl() {
           const url = new URL(window.location.href);
@@ -68,19 +68,13 @@
               removeTicketFromUrl();
               return null;
           }
-
-          let thongtin2 = data.attributes;
-
           removeTicketFromUrl();
-          return data.attributes
-          
+          return data.attributes;          
       }
 
       // BẮT ĐẦU CHƯƠNG TRÌNH
       (async () => {
             thongtin = await run();
-
-
             if (thongtin) {
                 document.dispatchEvent(new Event("CAS_READY"));
             }

@@ -116,6 +116,11 @@
     .btn-cancel:hover { background: #D35400; }
 
     .event-card.hidden { display: none; }
+    
+    /* Loading Styles */
+    .loading-container { text-align: center; padding: 60px; color: #0388B4; grid-column: 1/-1; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #0388B4; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     @media (max-width: 768px) {
       .page-title { font-size: 1.8rem; margin-bottom: 30px; }
@@ -137,8 +142,8 @@
       let thongtin = null;
       const urlParams = new URLSearchParams(window.location.search);
       const ticket = urlParams.get('ticket');
-      // const serviceUrl = window.location.href;
-      const serviceUrl = window.location.origin + window.location.pathname;
+      const serviceUrl = window.location.href;
+      // const serviceUrl = window.location.origin + window.location.pathname;
 
       function removeTicketFromUrl() {
           const url = new URL(window.location.href);
@@ -167,19 +172,16 @@
               removeTicketFromUrl();
               return null;
           }
-
-          let thongtin2 = data.attributes;
-
           removeTicketFromUrl();
-          return data.attributes
-          
+          return data.attributes;          
       }
 
       // BẮT ĐẦU CHƯƠNG TRÌNH
       (async () => {
-            thongtin = await run();
-            window.thongtin = thongtin;
-        })(); 
+          thongtin = await run();
+          window.thongtin = thongtin;
+          if(thongtin) document.dispatchEvent(new Event("CAS_READY"));
+        })();
 
   </script>
   <div class="container">
@@ -219,7 +221,6 @@
           <label class="filter-title">Lọc theo trạng thái:</label>
           <div class="filter-buttons">
             <button class="filter-btn all-btn active" data-filter="all">Tất Cả</button>
-            <button class="filter-btn" data-filter="registered">Đã Đăng Ký</button>
             <button class="filter-btn" data-filter="available">Có Thể Đăng Ký</button>
             <button class="filter-btn" data-filter="full">Đủ Số Lượng</button>
             <button class="filter-btn" data-filter="ended">Đã Kết Thúc</button>
@@ -228,7 +229,12 @@
       </div>
     </div>
 
-    <div class="events-grid" id="eventsGrid"></div>
+    <div class="events-grid" id="eventsGrid">
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <p>Đang tải danh sách buổi tư vấn...</p>
+      </div>
+    </div>
   </div>
 
   <div class="footer-wrapper">
@@ -245,13 +251,13 @@
     const locationFilter = document.getElementById('locationFilter');
     const timeFilter = document.getElementById('timeFilter');
 
-    window.evenetsData = []; // sẽ được gán sau khi gọi API
-
     // Hàm suy ra buổi từ giờ
     function getSession(timeStr) {
-      const cleaned = timeStr.replace(/h/g, ':').trim();
-      const startHour = parseInt(cleaned.split('-')[0].split(':')[0], 10);
-      if (isNaN(startHour)) return 'chiều';
+      if(!timeStr) return "";
+      const cleaned = timeStr.replace(/h/g, ':').split('-')[0].trim(); // lấy giờ bắt đầu
+      const startHour = parseInt(cleaned.split(':')[0], 10);
+      
+      if (isNaN(startHour)) return '';
       if (startHour >= 6 && startHour < 12) return 'sáng';
       if (startHour >= 12 && startHour < 18) return 'chiều';
       return 'tối';
@@ -266,23 +272,17 @@
       card.dataset.instructor = (event.instructor || "").toLowerCase();
       card.dataset.location = (event.location || "").toLowerCase();
       card.dataset.time = (event.time || "").toLowerCase();
-
-      // const session = getSession(event.time);
-      const session = event.time ? getSession(event.time) : "";
+      
+      const session = getSession(event.time);
       card.dataset.session = session;
 
       let footer = '';
-      if (event.status === 'registered') {
-        footer = `
-          <button class="btn btn-registered">Đã Đăng Ký</button>
-          <button class="btn btn-cancel" onclick="cancelRegistration('${event.id}')">Hủy Đăng Ký</button>
-        `;
-      } else if (event.status === 'available') {
-        footer = `<button class="btn btn-signup" onclick="signupEvent('${event.id}')">+ Đăng Ký</button>`;
-      } else if (event.status === 'full') {
-        footer = `<button class="btn btn-full" disabled>Đủ Số Lượng</button>`;
+      if (event.status === 'full') {
+        footer = `<button class="btn btn-full" disabled>Đủ Số Lượng </button>`;
       } else if (event.status === 'ended') {
         footer = `<button class="btn btn-ended" disabled>Đã Kết Thúc</button>`;
+      } else {
+        footer = `<button class="btn btn-signup" onclick="window.signupEvent('${event.id}')">+ Đăng Ký</button>`;
       }
 
       card.innerHTML = `
@@ -318,13 +318,22 @@
     }
 
     window.renderEvents = function() {
+      const data = window.eventsData || [];
       eventsGrid.innerHTML = '';
-      eventsData.forEach(event => eventsGrid.appendChild(createEventCard(event)));
+
+      if (data.length === 0) {
+        eventsGrid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#666;">Không có buổi tư vấn nào khả dụng.</div>';
+        return;
+      }
+
+      data.forEach(event => eventsGrid.appendChild(createEventCard(event)));
       filterEvents();
     }
 
     function filterEvents() {
-      const active = document.querySelector('.filter-btn.active').dataset.filter;
+      const activeBtn = document.querySelector('.filter-btn.active');
+      const active = activeBtn ? activeBtn.dataset.filter : 'all';
+      
       const name = eventNameFilter.value.trim().toLowerCase();
       const inst = instructorFilter.value.trim().toLowerCase();
       const loc = locationFilter.value.toLowerCase();
@@ -342,23 +351,6 @@
       });
     }
 
-    // Hàm hủy đăng ký (có thể mở rộng sau)
-    // window.cancelRegistration = function(id) {
-    //   if (confirm('Bạn có chắc chắn muốn hủy đăng ký buổi tư vấn này?')) {
-    //     alert('Hủy đăng ký thành công! (ID: ' + id + ')');
-    //     // TODO: gọi API hủy thực tế ở đây
-    //     location.reload(); // tạm reload để demo
-    //   }
-    // };
-
-    // // Hàm đăng ký (demo)
-    // window.signupEvent = function(id) {
-    //   if (confirm('Bạn có muốn đăng ký buổi tư vấn này không?')) {
-    //     alert('Đăng ký thành công! (ID: ' + id + ')');
-    //     location.reload();
-    //   }
-    // };
-
     // Sự kiện filter
     filterButtons.forEach(btn => btn.addEventListener('click', () => {
       filterButtons.forEach(b => b.classList.remove('active'));
@@ -366,20 +358,16 @@
       filterEvents();
     }));
 
-    [eventNameFilter, instructorFilter].forEach(el => el.addEventListener('input', filterEvents));
+    [eventNameFilter, instructorFilter].forEach(el => el.addEventListener('keyup', filterEvents));
     [locationFilter, timeFilter].forEach(el => el.addEventListener('change', filterEvents));
 
     // ================== GỌI API KHI LOAD TRANG ==================
-    document.addEventListener('DOMContentLoaded', async () => {
-      // Hiển thị loading (tùy chọn)
-      eventsGrid.innerHTML = '<p style="text-align:center; padding:40px; color:#666;">Đang tải danh sách buổi tư vấn...</p>';
-
+    document.addEventListener('CAS_READY', async () => {
       try {
-        window.eventsData = await window.getEvents();  // <-- gọi hàm từ data3.js
+        await window.getEvents(); // Gọi từ data3.js
         window.renderEvents();
       } catch (err) {
-        eventsGrid.innerHTML = '<p style="text-align:center; color:red;">Lỗi tải dữ liệu. Vui lòng thử lại sau.</p>';
-        console.error(err);
+        eventsGrid.innerHTML = '<p style="text-align:center; color:red; grid-column:1/-1;">Lỗi tải dữ liệu. Vui lòng thử lại sau.</p>';
       }
     });
   </script>

@@ -25,7 +25,7 @@ async function getEvents() {
     let registeredList = [];
     try {
       const registeredData = await StudentApi.getRegisteredList(window.thongtin.keyuser);
-      if(Array.isArray(registeredData)) registeredList = registeredData.map(r => r.BuoiTuVan_id);
+      if(Array.isArray(registeredData)) registeredList = registeredData.map(r => String(r.BuoiTuVan_id));
     } catch (error) {
       console.error("Không lấy được danh sách đã đăng ký để đối chiếu", error);
     }
@@ -43,7 +43,7 @@ async function getEvents() {
 
       let finalStatus = convertStatus(item);
 
-      if (registeredList.includes(item.BuoiTuVan_id)) finalStatus = "registered";
+      if (registeredList.includes(String(item.BuoiTuVan_id))) finalStatus = "registered";
 
       return {
         id: item.BuoiTuVan_id,

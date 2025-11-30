@@ -41,6 +41,7 @@ async function getHistoryData(studentId) {
         time: `${startTime} - ${endTime}`,
         location: locationDisplay,
         attendees: `${item.So_luong_dang_ky || 0} sinh viên`,
+        dadanhgia: item.Da_danh_gia_buoi,
         documents: [] // Xét rỗng do tách API lấy tài liệu ra riêng
       };
     });
@@ -131,7 +132,7 @@ async function cancelRegistration(sessionId)  {
     if (Array.isArray(response) && response.length > 0) response = response[0];
   
     if (response === true) {
-      alert('Hủy đăng ký thành công! (Buổi ID: ' + sessionId + ')');
+      showToast('Hủy đăng ký thành công!');
       
       if (window.historyData && window.historyData.sessions) {
         const filteredList = window.historyData.sessions.filter(s => String(s.id) !== String(sessionId));
@@ -147,7 +148,7 @@ async function cancelRegistration(sessionId)  {
   } catch(error) {
     console.error("Lỗi khi hủy đăng ký:", error);
     const msg = error.response?.data?.message || "Lỗi hệ thống";
-    alert('Hủy đăng ký thất bại:' + msg)
+    showToast('Hủy đăng ký thất bại:' + msg, 'error')
   }
 }
 
@@ -186,7 +187,7 @@ async function sendReview(sessionId, rating, comment) {
     return true;
   } catch (error) {
     console.error("Lỗi gửi đánh giá:", error);
-    alert("Lỗi: " + (error.message || error.response?.data?.message));
+    showToast("Lỗi: " + (error.message || error.response?.data?.message));
     return false;
   }
 }

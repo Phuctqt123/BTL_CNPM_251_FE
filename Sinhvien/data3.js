@@ -116,77 +116,14 @@ async function getEvents() {
 //   });
 // }
 
-function checkTime(targetEvent, allEvents) {
-  if(!targetEvent.Thoi_gian_bat_dau || !targetEvent.Thoi_gian_ket_thuc) return null;
 
-  const newStart = new Date(targetEvent.Thoi_gian_bat_dau).getTime();
-  const newEnd = new Date(targetEvent.Thoi_gian_ket_thuc).getTime();
-
-  const registeredSessions = window.myRegisteredSessions || [];
-
-  for (const session of registeredSessions) {
-    if (String(session.BuoiTuVan_id) === String(targetEvent.id)) continue;
-
-    if (!session.Thoi_gian_bat_dau || !session.Thoi_gian_ket_thuc) continue;
-
-    const existingStart = new Date(session.Thoi_gian_bat_dau).getTime();
-    const existingEnd = new Date(session.Thoi_gian_ket_thuc).getTime();
-
-    if (newStart < existingEnd && newEnd > existingStart) {
-      return session;
-    }
-  }
-  return null;
-}
 
 async function signupEvent(eventId) {
-  const currentEvents = window.eventsData || [];
-  const targetEvent = currentEvents.find(e => String(e.id) === String(eventId));
-
-  if (!targetEvent) {
-    alert('Không tìm thấy thông tin buổi tư vấn.');
-    return;
-  }
-
-  const conflictEvent = checkTime(targetEvent);
-  if (conflictEvent) {
-    const conflictName = conflictEvent.Ten_buoi_van;
-    const conflictDate = conflictEvent.Thoi_gian_bat_dau('T')[0];
-    const conflictTime = conflictEvent.Thoi_gian_bat_dau('T')[1].substring(0, 5);
-    alert(`Không thể đăng ký!\n\nBạn bị trùng lịch với buổi: "${conflictName}"\n(Thời gian: ${conflictTime} ngày ${conflictDate})`)
-    return;
-  }
-  if (!confirm('Bạn có muốn đăng ký buổi tư vấn này không?')) {
-    return;
-  }
-    
-  try {
-    let response = await StudentApi.registerSession({
+    return StudentApi.registerSession({
       svKey: window.thongtin.keyuser, 
       buoiId: parseInt(eventId)
     });
-    console.log("API Response:", response);
-    if (Array.isArray(response) && response.length > 0) {
-      response = response[0];
-    }
-
-    if (response && (response.status === 'success')) {
-      alert('Đăng ký thành công! (ID: ' + eventId + ')');
-      window.eventsData = window.eventsData.filter(e => String(e.id) !== String(eventId));
-      if(typeof window.renderEvents === 'function') {
-        window.renderEvents();
-      }
-
-      getEvents();
-    } else {
-      const errorMessage = response.message || "Đăng ký không thành công (Lỗi không xác định)";
-      throw new Error(errorMessage);
-    }
-  } catch(error) {
-    console.error("Lỗi khi đăng ký:", error);
-    const msg = error.message || error.response?.data?.message || "Lỗi hệ thống hoặc lớp đã đầy";
-    alert('Đăng ký thất bại:' + msg)
-  }
+    
 };
 
 window.getEvents = getEvents;

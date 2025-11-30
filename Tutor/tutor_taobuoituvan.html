@@ -179,15 +179,13 @@
         </div>
 
         <div class="form-group toggle-field" id="offlineField">
-          <label class="form-label">Địa chỉ phòng <span class="required">*</span></label>
-          <select class="form-select" id="roomSelect" required>
-            <option value="">-- Chọn phòng --</option>
-            <option value="room-101">Phòng 101 - Tầng 1</option>
-            <option value="room-201">Phòng 201 - Tầng 2</option>
-            <option value="room-301">Phòng 301 - Tầng 3</option>
-            <option value="room-401">Phòng 401 - Tầng 4</option>
-            <option value="room-501">Phòng 501 - Tầng 5</option>
-          </select>
+          <label class="form-label">Địa chỉ / Phòng học <span class="required">*</span></label>
+          <input 
+            type="text" 
+            class="form-input" 
+            id="offlineLocation" 
+            placeholder="Ví dụ: Phòng 305 - Tầng 3, Tòa nhà A, 123 Đường Láng..." 
+            required>
         </div>
 
         <div class="form-group toggle-field hidden" id="onlineField">
@@ -270,7 +268,8 @@
     const isOnline = document.getElementById('online').checked;
     document.getElementById('offlineField').classList.toggle('hidden', isOnline);
     document.getElementById('onlineField').classList.toggle('hidden', !isOnline);
-    document.getElementById('roomSelect').required = !isOnline;
+    // Nếu bạn dùng input text thì thay bằng:
+    document.getElementById('offlineLocation').required = !isOnline;
     document.getElementById('onlineLink').required = isOnline;
   }
   document.querySelectorAll('input[name="format"]').forEach(radio => radio.addEventListener('change', toggleFields));
@@ -318,8 +317,8 @@
       max_students: parseInt(document.getElementById('maxStudents').value),
       format: document.querySelector('input[name="format"]:checked').value,
       location: document.querySelector('input[name="format"]:checked').value === 'offline'
-        ? document.getElementById('roomSelect').value
-        : null,
+      ? document.getElementById('offlineLocation').value.trim()
+      : null,
       online_link: document.querySelector('input[name="format"]:checked').value === 'online'
         ? document.getElementById('onlineLink').value.trim()
         : null,

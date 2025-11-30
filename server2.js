@@ -88,6 +88,11 @@ app.get("/tutor/xemlichsu", (req, res) => {
     res.sendFile(path.join(__dirname, "Tutor/tutor_xemlichsu.html"));
 });
 
+app.get("/login", (req, res) => {
+    res.sendFile(path.join(__dirname, "trangchu.html"));
+});
+
+
 // JS Tutor
 ["data", "data2"].forEach((file) => {
     app.get(`/tutor/${file}`, (req, res) => {

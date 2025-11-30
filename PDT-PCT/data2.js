@@ -10,36 +10,22 @@ async function getEventDetailById(eventId) {
       throw new Error("Không tìm thấy buổi tư vấn");
     }
 
-    // Lấy thông tin chính của buổi
+    // Lấy dữ liệu buổi tư vấn đầu tiên
     const sessionData = result[0];
 
-    const buoiInfo = sessionData.Buoi_info;
-    const taiLieu = sessionData.Tai_lieu || [];
-    const danhSachSV = sessionData.Danh_sach_SV || [];
-
-    // Chuyển dữ liệu về dạng thuận tiện cho render
-    const details = [
-      { icon: "fas fa-user-tie",        label: "Giảng viên",      value: buoiInfo.GiangVien_Ho_ten },
-      { icon: "fas fa-calendar-alt",    label: "Ngày diễn ra",    value: new Date(buoiInfo.thoi_gian_bat_dau).toLocaleDateString("vi-VN") },
-      { icon: "fas fa-clock",           label: "Thời gian",       value: `${new Date(buoiInfo.thoi_gian_bat_dau).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(buoiInfo.thoi_gian_ket_thuc).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` },
-      { icon: "fas fa-map-marker-alt",  label: "Địa điểm",        value: buoiInfo.dia_chi || "Online"},
-      { icon: "fas fa-users",           label: "Số lượng đăng ký", value: `${danhSachSV.length}/${buoiInfo.so_luong_toi_da}` },
-      { icon: "fas fa-check-circle",    label: "Trạng thái",      value: buoiInfo.trang_thai }
-    ];
-
-    // Tài liệu buổi học
-    const documents = taiLieu.map(doc => ({
-      name: doc.filename,
-      ngay_tao: doc.ngay_tao,
-      tailieu_id: doc.tailieu_id
+    // documents có thể cần map lại nếu muốn chuẩn hoá thêm
+    const documents = (sessionData.documents || []).map(doc => ({
+      name: doc.name,
+      isFolder: doc.isFolder || false
     }));
 
     // Trả về object chuẩn cho frontend
     return {
-      title: buoiInfo.ten_buoi_van,
-      details,
+      title: sessionData.title,
+      details: sessionData.details || [],
       documents,
-      danhSachSV
+      // danhSachSV nếu API không trả nữa thì để mảng rỗng
+      danhSachSV: sessionData.danhSachSV || []
     };
 
   } catch (err) {
@@ -47,6 +33,7 @@ async function getEventDetailById(eventId) {
     throw err;
   }
 }
+
 
 // function getEventDetailById(eventId) {
 //   return PDTApi.getDetailSession(eventId);

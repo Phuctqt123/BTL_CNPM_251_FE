@@ -435,14 +435,33 @@
     [locationFilter, timeFilter].forEach(el => el.addEventListener('change', filterEvents));
 
     // ================== GỌI API KHI LOAD TRANG ==================
-    document.addEventListener('CAS_READY', async () => {
-      try {
-        await window.getEvents(); // Gọi từ data3.js
-        window.renderEvents();
-      } catch (err) {
-        eventsGrid.innerHTML = '<p style="text-align:center; color:red; grid-column:1/-1;">Lỗi tải dữ liệu. Vui lòng thử lại sau.</p>';
+    // Đợi TẬN 2 thứ: (1) CAS sẵn sàng + (2) data3.js load xong
+    async function startWhenReady() {
+      // 1. Đợi CAS login xong
+      if (!window.thongtin) {
+        await new Promise(resolve => document.addEventListener('CAS_READY', resolve, { once: true }));
       }
-    });
+
+      // 2. Đợi window.getEvents có thật sự tồn tại (tức data3.js đã load xong)
+      while (typeof window.getEvents !== 'function') {
+        console.log('Đang chờ data3.js load xong...');
+        await new Promise(resolve => setTimeout(resolve, 100)); // chờ 100ms rồi kiểm tra lại
+      }
+
+      // Bây giờ chắc chắn an toàn rồi
+      try {
+        const data = await window.getEvents();
+        window.eventsData = data;
+        window.renderEvents();
+        console.log('Tải danh sách buổi tư vấn thành công!');
+      } catch (err) {
+        console.error(err);
+        eventsGrid.innerHTML = '<p style="text-align:center; color:#e74c3c; grid-column:1/-1; padding:40px;">Lỗi tải dữ liệu. Vui lòng tải lại trang!</p>';
+      }
+    }
+
+    // Gọi ngay khi trang load
+    startWhenReady();
   </script>
 
   <style>

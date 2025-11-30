@@ -751,28 +751,58 @@
     let currentSessionId = null;
 
     // ================== GỌI API KHI LOAD TRANG ==================
-    document.addEventListener('CAS_READY', async () => {
-      await loadHistoryData();
-    });
+    // ================== KHỞI ĐỘNG AN TOÀN – ĐỢI CẢ CAS + data4.js LOAD XONG MỚI CHẠY ==================
+async function startWhenEverythingReady() {
+  const grid = document.getElementById('sessionsGrid');
+  
+  // Hiển thị loading đẹp hơn
+  grid.innerHTML = `
+    <p style="grid-column:1/-1; text-align:center; padding:80px 20px; color:#0388B4; font-size:1.2rem;">
+      <i class="fas fa-spinner fa-spin" style="font-size:28px;"></i><br><br>
+      Đang xác thực và tải lịch sử đăng ký...
+    </p>`;
 
-    // Fallback: Nếu thongtin đã có sẵn (chạy quá nhanh/race condition)
-    if (window.thongtin) {
-      loadHistoryData();
+  // 1. Đợi CAS login xong (window.thongtin có dữ liệu)
+  while (!window.thongtin || !window.thongtin.keyuser) {
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  // 2. Đợi file data4.js load xong và có hàm getHistoryData
+  while (typeof window.getHistoryData !== 'function') {
+    console.log('Đang chờ data4.js load xong...');
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  // Bây giờ chắc chắn 100% an toàn rồi!
+  try {
+    grid.innerHTML = `
+      <p style="grid-column:1/-1; text-align:center; padding:60px 20px; color:#666; font-size:1.1rem;">
+        <i class="fas fa-spinner fa-spin"></i> Đang tải danh sách buổi tư vấn đã đăng ký...
+      </p>`;
+
+    const myId = window.thongtin.keyuser;
+    const result = await window.getHistoryData(myId);
+
+    if (!result || !result.sessions) {
+      throw new Error("Dữ liệu trả về không hợp lệ");
     }
 
-    async function loadHistoryData() {
-      const grid = document.getElementById('sessionsGrid');
-      grid.innerHTML = '<p style="grid-column: 1 / -1; text-align:center; padding:60px 20px; color:#666; font-size:1.1rem;"><i class="fas fa-spinner fa-spin"></i> Đang tải lịch sử đăng ký...</p>';
+    window.historyData = result;
+    window.renderSessions(result.sessions); // dùng hàm bạn đã có
 
-      try {
-        const myId = window.thongtin ? window.thongtin.keyuser : null;
-        const data = await window.getHistoryData(myId);  // Gọi API từ data4.js
-        renderSessions(data.sessions);
-      } catch (err) {
-        grid.innerHTML = '<p style="grid-column: 1 / -1; text-align:center; color:#e74c3c; padding:60px;">Lỗi tải dữ liệu. Vui lòng thử lại sau!</p>';
-        console.error("Lỗi tải lịch sử:", err);
-      }
-    };
+    console.log("Tải lịch sử thành công!");
+  } catch (err) {
+    console.error("Lỗi tải lịch sử:", err);
+    grid.innerHTML = `
+      <p style="grid-column:1/-1; text-align:center; color:#e74c3c; padding:80px 20px; font-size:1.1rem;">
+        <i class="fas fa-exclamation-triangle" style="font-size:28px;"></i><br><br>
+        Lỗi tải dữ liệu. Vui lòng <a href="javascript:location.reload()" style="color:#0388B4; text-decoration:underline;">tải lại trang</a>.
+      </p>`;
+  }
+}
+
+// GỌI NGAY KHI TRANG LOAD – KHÔNG CẦN ĐỢI CAS_READY NỮA!
+startWhenEverythingReady();
 
     window.renderSessions = function(sessions) {
       const grid = document.getElementById('sessionsGrid');

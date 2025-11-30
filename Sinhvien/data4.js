@@ -15,12 +15,17 @@ function convertHistoryStatus(item) {
 async function getHistoryData(studentId) {
   try {
     const data = await StudentApi.getRegisteredList(studentId);
-    const list = Array.isArray(data) ? data : (data.data || []);
+    // const list = Array.isArray(data) ? data : (data.data || []);
+    let list = [];
+    if (Array.isArray(data)) list = data;
+    else if (data && Array.isArray(data.data)) list = data.data;
 
     const mappedSession = list.map(item => {
-      let locationDisplay = item.Dia_chi;
-      if (!locationDisplay || locationDisplay.trim() === "") {
-          locationDisplay = item.Hinh_thuc || "Online"; 
+      let locationDisplay = "Chưa cập nhật";
+      if (item.Hinh_thuc && item.Hinh_thuc.toLowerCase() === 'online') {
+        locationDisplay = "Online (Google Meet)";
+      } else {
+        locationDisplay = item.Dia_chi || item.Hinh_thuc;
       }
 
       const startTime = item.Thoi_gian_bat_dau ? item.Thoi_gian_bat_dau.split('T')[1].substring(0, 5) : "--";
@@ -36,9 +41,14 @@ async function getHistoryData(studentId) {
         time: `${startTime} - ${endTime}`,
         location: locationDisplay,
         attendees: `${item.So_luong_dang_ky || 0} sinh viên`,
-        documents: []
+        documents: [] // Xét rỗng do tách API lấy tài liệu ra riêng
       };
     });
+
+    mappedSession.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    if (!window.historyData) window.historyData = {};
+    window.historyData.sessions = mappedSession;
 
     return {sessions: mappedSession};
   } catch (error) {
@@ -112,22 +122,27 @@ async function cancelRegistration(sessionId)  {
   }
 
   try {
-    await StudentApi.cancelSession(svKey, sessionId);
-    alert('Hủy đăng ký thành công! (Buổi ID: ' + sessionId + ')')
-    
-    if (window.historyData && window.historyData.sessions) {
-      const sessionsArray = window.historyData.sessions;
-      const idToRemove = String(sessionId);
+    let response = await StudentApi.cancelSession({
+      svKey: svKey, 
+      buoiId: parseInt(sessionId)
+    });
 
-      const indexToRemove = sessionsArray.findIndex(session => String(session.id) === idToRemove);
-
-      if (indexToRemove !== -1) {
-        sessionsArray.splice(indexToRemove, 1);
+    if (response === false) throw new Error("Hủy thất bại");
+    if (Array.isArray(response) && response.length > 0) response = response[0];
+  
+    if (response === true) {
+      alert('Hủy đăng ký thành công! (Buổi ID: ' + sessionId + ')');
+      
+      if (window.historyData && window.historyData.sessions) {
+        const filteredList = window.historyData.sessions.filter(s => String(s.id) !== String(sessionId));
+        window.historyData.sessions = filteredList;
+        
+        if (typeof window.renderSessions === 'function') {
+          window.renderSessions(filteredList);
+        }
       }
-    
-      if (typeof window.renderSessions === 'function') {
-        window.renderSessions(sessionsArray);
-      }
+    } else {
+      throw new Error(response.message || "Lỗi hủy không xác định");
     }
   } catch(error) {
     console.error("Lỗi khi hủy đăng ký:", error);
@@ -136,5 +151,47 @@ async function cancelRegistration(sessionId)  {
   }
 }
 
+async function getSessionDocs(sessionId) {
+  try {
+    const response = await StudentApi.getDocuments(sessionId);
+    
+    if (Array.isArray(response)) return response;
+
+    if (response && Array.isArray(response.data)) return response.data;
+
+    return [];
+  } catch (error) {
+    console.error("Lỗi tải tài liệu:", error);
+    return [];
+  }
+}
+
+async function sendReview(sessionId, rating, comment) {
+  const svKey = window.thongtin ? window.thongtin.keyuser : null;
+  const payload = {
+    nguoiDanhGia: svKey,
+    diemSo: parseInt(rating),
+    buoiId: parseInt(sessionId),
+    noiDung: comment
+  };
+
+  try {
+    let response = await StudentApi.reviews(payload);
+    console.log(response)
+    console.log(response.status)
+    if (response === false) throw new Error("Gửi thất bại");
+
+    if (Array.isArray(response) && response.length > 0) response = response[0];
+
+    return true;
+  } catch (error) {
+    console.error("Lỗi gửi đánh giá:", error);
+    alert("Lỗi: " + (error.message || error.response?.data?.message));
+    return false;
+  }
+}
+
 window.getHistoryData = getHistoryData;
 window.cancelRegistration = cancelRegistration;
+window.getSessionDocs = getSessionDocs;
+window.sendReview = sendReview;

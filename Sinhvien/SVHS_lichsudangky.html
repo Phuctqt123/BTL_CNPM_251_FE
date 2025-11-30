@@ -14,7 +14,7 @@
     }
 
     body {
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
       color: #2c3e50;
       line-height: 1.6;
@@ -620,24 +620,19 @@
 </head>
 <body>
   <iframe src="../header.html" style="width: 100%; border: none; overflow: hidden; display: block;"></iframe>
-  <!-- <script>
+  <script>
       let thongtin = null;
       const urlParams = new URLSearchParams(window.location.search);
       const ticket = urlParams.get('ticket');
-      // const serviceUrl = window.location.href;
       const serviceUrl = window.location.origin + window.location.pathname;
 
       function removeTicketFromUrl() {
-          const url = new URL(window.location.href);
-          url.searchParams.delete('ticket');  // chỉ xóa ticket
-          window.history.replaceState({}, document.title, url.toString());
+          window.history.replaceState({}, document.title, serviceUrl);
       }
 
       async function run() {
-
           if (!ticket) {
-              window.location.href =
-                  `https://casserver-production.up.railway.app/cas/login?service=${encodeURIComponent(serviceUrl)}`;
+              window.location.href = `https://casserver-production.up.railway.app/cas/login?service=${encodeURIComponent(serviceUrl)}`;
               return; // dừng luôn không chạy tiếp
           }
 
@@ -645,30 +640,27 @@
           const response = await fetch('http://localhost:8087/userinfo', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ticket, service: serviceUrl.split('?')[0] })
+              body: JSON.stringify({ ticket, service: serviceUrl })
           });
 
           const data = await response.json();
 
           if (!data.success) {
               removeTicketFromUrl();
-              return null;
+              return;
           }
 
-          let thongtin2 = data.attributes;
+          window.thongtin = data.attributes;
+          thongtin = data.attributes;
 
           removeTicketFromUrl();
-          return data.attributes
           
+          document.dispatchEvent(new Event("CAS_READY"));
       }
 
       // BẮT ĐẦU CHƯƠNG TRÌNH
-      (async () => {
-            thongtin = await run();
-            window.thongtin = thongtin;
-        })(); 
-
-  </script> -->
+      run();
+  </script>
   <div class="main-container">
     <main>
       <h2 class="page-title">Lịch Sử Đăng Ký Buổi Tư Vấn</h2>
@@ -738,77 +730,38 @@
   <!-- Data & Scripts -->
   <script type="module" src="/sv/data4"></script>
   <script>
-    let historyData = { sessions: [] }; // sẽ được gán từ API
+    window.historyData = { sessions: [] }; // sẽ được gán từ API
     let currentSessionId = null;
-    let thongtin = null;
-
-      const urlParams = new URLSearchParams(window.location.search);
-      const ticket = urlParams.get('ticket');
-      // const serviceUrl = window.location.href;
-      const serviceUrl = window.location.origin + window.location.pathname;
-
-      function removeTicketFromUrl() {
-          const url = new URL(window.location.href);
-          url.searchParams.delete('ticket');  // chỉ xóa ticket
-          window.history.replaceState({}, document.title, url.toString());
-      }
-
-      async function run() {
-
-          if (!ticket) {
-              window.location.href =
-                  `https://casserver-production.up.railway.app/cas/login?service=${encodeURIComponent(serviceUrl)}`;
-              return; // dừng luôn không chạy tiếp
-          }
-
-          // ⏳ CHỜ fetch xử lý xong
-          const response = await fetch('http://localhost:8087/userinfo', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ticket, service: serviceUrl.split('?')[0] })
-          });
-
-          const data = await response.json();
-
-          if (!data.success) {
-              removeTicketFromUrl();
-              return null;
-          }
-
-          removeTicketFromUrl();
-          return data.attributes
-          
-      }
-
-      // BẮT ĐẦU CHƯƠNG TRÌNH
 
     // ================== GỌI API KHI LOAD TRANG ==================
-    // document.addEventListener('DOMContentLoaded', async () => {
+    document.addEventListener('CAS_READY', async () => {
+      await loadHistoryData();
+    });
+
+    // Fallback: Nếu thongtin đã có sẵn (chạy quá nhanh/race condition)
+    if (window.thongtin) {
+      loadHistoryData();
+    }
+
     async function loadHistoryData() {
       const grid = document.getElementById('sessionsGrid');
-      grid.innerHTML = '<p style="grid-column: 1 / -1; text-align:center; padding:60px 20px; color:#666; font-size:1.1rem;">Đang tải lịch sử đăng ký...</p>';
+      grid.innerHTML = '<p style="grid-column: 1 / -1; text-align:center; padding:60px 20px; color:#666; font-size:1.1rem;"><i class="fas fa-spinner fa-spin"></i> Đang tải lịch sử đăng ký...</p>';
 
       try {
         const myId = window.thongtin ? window.thongtin.keyuser : null;
-        const data = await getHistoryData(myId);  // Gọi API từ data4.js
-        historyData = data;
-        renderSessions(historyData.sessions);
+        const data = await window.getHistoryData(myId);  // Gọi API từ data4.js
+        renderSessions(data.sessions);
       } catch (err) {
         grid.innerHTML = '<p style="grid-column: 1 / -1; text-align:center; color:#e74c3c; padding:60px;">Lỗi tải dữ liệu. Vui lòng thử lại sau!</p>';
         console.error("Lỗi tải lịch sử:", err);
       }
     };
-    (async () => {
-      thongtin = await run();
-      window.thongtin = thongtin;
-      await loadHistoryData();
-    })(); 
 
-    function renderSessions(sessions) {
+    window.renderSessions = function(sessions) {
       const grid = document.getElementById('sessionsGrid');
       grid.innerHTML = '';
 
-      if (sessions.length === 0) {
+      if (!sessions || sessions.length === 0) {
         grid.innerHTML = '<p style="grid-column: 1 / -1; text-align:center; padding:80px; color:#95a5a6; font-size:1.1rem;">Bạn chưa đăng ký buổi tư vấn nào.</p>';
         return;
       }
@@ -825,7 +778,7 @@
 
         const actionButton = session.status === 'completed'
           ? `<button class="action-btn btn-evaluate" onclick="openEvaluationForm(${session.id})">Đánh Giá</button>`
-          : `<button class="action-btn btn-cancel" onclick="cancelRegistration(${session.id})">Hủy Đăng Ký</button>`;
+          : `<button class="action-btn btn-cancel" onclick="window.cancelRegistration(${session.id})">Hủy Đăng Ký</button>`;
 
         card.innerHTML = `
           <div class="session-header">
@@ -849,14 +802,14 @@
               <span class="info-label">Địa điểm:</span>
               <span class="info-value">${session.location}</span>
             </div>
-            <div class="info-row">
-              <span class="info-label">Số lượng:</span>
-              <span class="info-value">${session.attendees || 'Chưa xác định'}</span>
+             <div class="info-row">
+              <span class="info-label">Sĩ số:</span>
+              <span class="info-value">${session.attendees}</span>
             </div>
           </div>
           <div class="actions">
             <button class="action-btn btn-download" onclick="openDocumentsManagement(${session.id})">
-              Tài Liệu (${(session.documents?.length || 0)})
+              Tài Liệu
             </button>
             ${actionButton}
           </div>
@@ -864,43 +817,52 @@
 
         grid.appendChild(card);
       });
+      
+      // Apply lại filter sau khi render lại
+      const currentFilterBtn = document.querySelector('.filter-btn.active');
+      if (currentFilterBtn) {
+          const match = currentFilterBtn.getAttribute('onclick').match(/'([^']+)'/);
+          if (match) filterSessions(match[1]);
+      }
     }
 
     // ================== CÁC HÀM KHÁC (giữ nguyên + nhỏ cải thiện) ==================
-    function openDocumentsManagement(sessionId) {
+    async function openDocumentsManagement(sessionId) {
       const docsPanel = document.getElementById('documentsManagement');
       const docsContainer = document.getElementById('documentsContainer');
       
       currentSessionId = sessionId;
-      docsContainer.innerHTML = '';
-      
-      const session = historyData.sessions.find(s => s.id === sessionId);
-      if (!session || !session.documents || session.documents.length === 0) {
-        docsContainer.innerHTML = '<p style="color:#95a5a6; font-style:italic;">Không có tài liệu nào.</p>';
-      } else {
-        session.documents.forEach(docName => {
-          const { type, icon } = getFileInfo(docName);
-          const isFolder = !docName.includes('.') || docName.endsWith('/');
-
-          const tag = document.createElement('div');
-          tag.className = `document-item-tag ${isFolder ? 'folder' : type}`;
-          tag.innerHTML = `<i class="document-icon ${icon}"></i><span>${docName}</span>`;
-
-          tag.onclick = function(e) {
-            e.stopPropagation();
-            if (isFolder) {
-              alert(`Đây là thư mục: "${docName}"`);
-            } else {
-              const fileUrl = `documents/${sessionId}/${docName}`;
-              window.open(fileUrl, '_blank');
-            }
-          };
-
-          docsContainer.appendChild(tag);
-        });
-      }
-
+      docsContainer.innerHTML = '<p style="color:#666;">Đang tải danh sách tài liệu...</p>';
       docsPanel.classList.add('open');
+
+      try {
+        const documents = await window.getSessionDocs(sessionId);
+
+        docsContainer.innerHTML = '';
+        
+        if (!documents || documents.length === 0) {
+          docsContainer.innerHTML = '<p style="color:#95a5a6; font-style:italic;">Không có tài liệu nào.</p>';
+        } else {
+          documents.forEach(doc => {
+            const docName = doc.filename || doc.name || doc; 
+            const { type, icon } = getFileInfo(docName);
+
+            const tag = document.createElement('div');
+            tag.className = `document-item-tag ${type}`;
+            tag.innerHTML = `<i class="document-icon ${icon}"></i><span>${docName}</span>`;
+
+            tag.onclick = function(e) {
+              e.stopPropagation();
+              const downloadUrl = doc.url || `https://backend-production-42b5.up.railway.app/api/download/${docName}`;
+              window.open(downloadUrl, '_blank');
+            };
+
+            docsContainer.appendChild(tag);
+          });
+        }
+      } catch (err) {
+        docsContainer.innerHTML = '<p style="color:red;">Lỗi tải tài liệu.</p>';
+      }
     }
 
     function closeDocumentsManagement() {
@@ -919,33 +881,38 @@
       document.getElementById('evaluationModal').classList.remove('open');
     }
 
-    function submitEvaluation(event) {
+    async function submitEvaluation(event) {
       event.preventDefault();
       const rating = document.querySelector('input[name="rating"]:checked')?.value;
       const comment = document.getElementById('evaluationDetail').value.trim();
 
       if (!rating || !comment) {
-        alert('Vui lòng điền đầy đủ đánh giá và nhận xét!');
+        alert('Vui lòng điền đầy đủ mức độ hài lòng và nhận xét!');
         return;
       }
 
-      alert(`Cảm ơn bạn! Đánh giá ${rating} sao đã được gửi thành công cho buổi #${currentSessionId}`);
-      closeEvaluationForm();
-      // TODO: Gửi về backend ở đây
-    }
+      const submitBtn = document.querySelector('.btn-submit');
+      const originalText = submitBtn.innerText;
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Đang gửi...";
 
-    // function cancelRegistration(sessionId) {
-    //   if (confirm('Bạn có chắc chắn muốn hủy đăng ký buổi tư vấn này?')) {
-    //     alert('Hủy đăng ký thành công! (Buổi ID: ' + sessionId + ')');
-    //     // TODO: Gọi API hủy thật
-    //     location.reload(); // demo
-    //   }
-    // }
+      const success = await window.sendReview(currentSessionId, rating, comment);
+      
+      submitBtn.disabled = false;
+      submitBtn.innerText = originalText;
+
+      if (success) {
+          alert(`✅ Cảm ơn bạn! Đánh giá đã được gửi thành công.`);
+          closeEvaluationForm();
+      }
+    }
 
     // Filter & Search
     function filterSessions(filter) {
       document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
+      const btns = Array.from(document.querySelectorAll('.filter-btn'));
+      const activeBtn = btns.find(b => b.getAttribute('onclick').includes(`'${filter}'`));
+      if(activeBtn) activeBtn.classList.add('active');
 
       document.querySelectorAll('.session-card').forEach(card => {
         const show = filter === 'all' || card.dataset.filter === filter;
@@ -964,6 +931,7 @@
     }
 
     function getFileInfo(filename) {
+      if(!filename) return { type: 'file', icon: 'fas fa-file' };
       const ext = filename.split('.').pop()?.toLowerCase() || '';
       const map = {
         'pdf': { type: 'pdf', icon: 'fas fa-file-pdf' },
